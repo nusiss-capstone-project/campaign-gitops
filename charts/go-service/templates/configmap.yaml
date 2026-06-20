@@ -1,0 +1,11 @@
+{{- if .Values.configFile.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "go-service.fullname" . }}-config
+  labels:
+    {{- include "go-service.labels" . | nindent 4 }}
+data:
+  {{ .Values.configFile.name }}: |
+    {{- toYaml .Values.configFile.content | nindent 4 }}
+{{- end }}

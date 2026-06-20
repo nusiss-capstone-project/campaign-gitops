@@ -1,0 +1,79 @@
+serviceName: task-mservice
+
+image:
+  repository: registry.cn-singapore.aliyuncs.com/campaign-center/task-mservice
+  tag: dev-latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+containerPorts:
+  http: 8080
+  grpc: 5001
+
+configFile:
+  enabled: true
+  name: config.yml
+  mountPath: /app/config.yml
+  content:
+    grpc:
+      host: "0.0.0.0"
+      port: 5001
+      connect_timeout: 3
+      max_pool_size: 200
+    http:
+      host: "0.0.0.0"
+      port: 8080
+    log:
+      level: debug
+      file_path: ./logs/task-mservice.log
+    system:
+      allowed_origins:
+        - https://campaign-center-admin-web.vercel.app
+        - https://finverse-web.vercel.app
+        - http://localhost:3000
+
+externalSecret:
+  enabled: true
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: task-mservice-secret
+  refreshInterval: 1h
+  data:
+    - secretKey: MYSQL_DSN
+      remoteRef:
+        key: secret/data/campaign-center/dev/task-mservice
+        property: MYSQL_DSN
+
+envFromSecret:
+  enabled: true
+  secretName: task-mservice-secret
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5001
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: task-api.dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          port: http
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+imagePullSecrets:
+  - name: acr-secret
