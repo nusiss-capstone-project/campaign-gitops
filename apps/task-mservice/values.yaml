@@ -49,11 +49,8 @@ externalSecret:
     name: vault-backend
   targetSecretName: task-mservice-secret
   refreshInterval: 1h
-  data:
-    - secretKey: MYSQL_DSN
-      remoteRef:
-        key: campaign-center/dev/task-mservice
-        property: MYSQL_DSN
+  remoteRef:
+    key: campaign-center/dev/task-mservice
 
 envFromSecret:
   enabled: true
@@ -64,17 +61,6 @@ service:
   ports:
     http: 8080
     grpc: 5001
-
-ingress:
-  enabled: true
-  className: traefik
-  hosts:
-    - host: task-api.dev.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-          port: http
-  tls: []
 
 resources:
   requests:

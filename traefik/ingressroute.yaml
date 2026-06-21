@@ -1,0 +1,27 @@
+# Shared Traefik HTTP routes for Campaign Center microservices.
+# Deployed to kube-system; backends may live in app namespaces (e.g. campaign-dev).
+#
+# One host per environment; route by path prefix:
+#   /task-ms       -> task-mservice
+#   /campaign-api  -> campaign-api (future)
+#   /reward-service -> reward-service (future)
+#
+# Branch strategy: dev / staging / main each carry their own ingressroute.yaml.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: campaign-center-http
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`campaignhub.best`) && PathPrefix(`/task-ms`)
+      kind: Rule
+      services:
+        - name: task-mservice
+          namespace: campaign-dev
+          port: 8080

@@ -68,6 +68,10 @@ externalSecret:
     name: vault-backend
   targetSecretName: ""
   refreshInterval: 1h
+  # Sync all keys from this Vault path into the target Secret.
+  remoteRef:
+    key: ""
+  # Optional explicit key mapping. When non-empty, overrides remoteRef extract mode.
   data: []
 
 envFromSecret:
@@ -79,13 +83,6 @@ service:
   ports:
     http: 8080
     grpc: 5001
-
-ingress:
-  enabled: false
-  className: traefik
-  annotations: {}
-  hosts: []
-  tls: []
 
 podAnnotations: {}
 podLabels: {}

@@ -11,8 +11,8 @@ This repo defines *what* runs on the cluster — container images, replica count
 | Helm charts and per-service `values.yaml` | ECS / k3s cluster provisioning |
 | ArgoCD Application manifests | ArgoCD installation and bootstrap |
 | Application ConfigMaps (`config.yml`) | Vault, External Secrets Operator |
-| ExternalSecret definitions (Vault path refs) | Traefik, namespaces, ACR pull secrets |
-| Ingress host and TLS configuration | ClusterSecretStore / SecretStore setup |
+| ExternalSecret definitions (Vault path refs) | Traefik installation, namespaces, ACR pull secrets |
+| Shared Traefik IngressRoute (`traefik/`) | ClusterSecretStore / SecretStore setup |
 
 Sensitive values are **never** committed here. Secrets are sourced from HashiCorp Vault via the External Secrets Operator, which is installed and configured in the IaC repository.
 
@@ -23,6 +23,7 @@ campaign-center-gitops/
 ├── charts/go-service/          # Reusable Helm chart for all Go microservices
 ├── apps/<service-name>/        # Per-service deployment values (one file per branch)
 │   └── values.yaml
+├── traefik/                    # Shared Traefik IngressRoute (kube-system)
 └── argocd/applications/        # ArgoCD Application manifests
 ```
 
@@ -36,7 +37,7 @@ Environments are separated by Git branch — not by multiple values files:
 | `staging` | Staging |
 | `main` | Production |
 
-Each branch contains its own `apps/<service-name>/values.yaml` with environment-specific image tags, Vault paths, ingress hosts, and configuration. Do **not** create `values-dev.yaml`, `values-staging.yaml`, or `values-prod.yaml`.
+Each branch contains its own `apps/<service-name>/values.yaml` with environment-specific image tags, Vault paths, and configuration. HTTP routing is maintained in `traefik/ingressroute.yaml` per branch. Do **not** create `values-dev.yaml`, `values-staging.yaml`, or `values-prod.yaml`.
 
 ArgoCD Applications point to the appropriate branch via `targetRevision`.
 
@@ -49,13 +50,17 @@ ArgoCD Applications point to the appropriate branch via `targetRevision`.
    cp apps/task-mservice/values.yaml apps/<service-name>/values.yaml
    ```
 
-   Update `serviceName`, image repository/tag, `configFile.content`, Vault paths, ingress host, and secret names.
+   Update `serviceName`, image repository/tag, `configFile.content`, Vault paths, and secret names.
 
-2. **Store secrets in Vault**
+2. **Add a Traefik route**
 
-   Add secrets to Vault at the path referenced in `externalSecret.data[].remoteRef.key` (for example, `secret/data/campaign-center/dev/<service-name>`).
+   Add a `PathPrefix` rule in `traefik/ingressroute.yaml` for the shared API host (for example `/task-ms`).
 
-3. **Create an ArgoCD Application**
+3. **Store secrets in Vault**
+
+   Add secrets to Vault at the path referenced in `externalSecret.remoteRef.key` (for example, `campaign-center/dev/<service-name>`).
+
+4. **Create an ArgoCD Application**
 
    ```bash
    cp argocd/applications/task-mservice.yaml argocd/applications/<service-name>.yaml
@@ -63,11 +68,7 @@ ArgoCD Applications point to the appropriate branch via `targetRevision`.
 
    Update the application name, destination namespace, value file path, and `targetRevision` for the target environment.
 
-4. **Apply the ArgoCD Application** (once, from the IaC/bootstrap layer or manually):
-
-   ```bash
-   kubectl apply -f argocd/applications/<service-name>.yaml
-   ```
+5. **Commit and push** — the root ArgoCD Application loads manifests from `argocd/applications/` automatically.
 
 The `go-service` chart is generic — no service-specific logic lives inside the chart. Future services such as `campaign-api`, `reward-service`, `user-service`, and `payment-service` only need a new `apps/<service-name>/values.yaml` and ArgoCD Application.
 
@@ -130,20 +131,15 @@ externalSecret:
     name: vault-backend
   targetSecretName: <service-name>-secret
   refreshInterval: 1h
-  data:
-    - secretKey: MYSQL_DSN
-      remoteRef:
-        key: secret/data/campaign-center/dev/<service-name>
-        property: MYSQL_DSN
+  remoteRef:
+    key: campaign-center/dev/<service-name>
 
 envFromSecret:
   enabled: true
   secretName: <service-name>-secret
 ```
 
-The chart generates an `ExternalSecret` only when `externalSecret.enabled=true`. The resulting Kubernetes Secret is injected into the Deployment via `envFrom.secretRef`, so applications read values such as `MYSQL_DSN` from environment variables.
-
-Use `ClusterSecretStore` or `SecretStore` by setting `externalSecret.secretStoreRef.kind`.
+All keys under the Vault path are synced into the Kubernetes Secret via `dataFrom.extract`. The Secret is injected into the Deployment via `envFrom.secretRef`.
 
 ## Deploy task-mservice first
 
@@ -152,34 +148,25 @@ Prerequisites (managed in the IaC repo):
 - k3s cluster running
 - ArgoCD installed and connected to this repository
 - External Secrets Operator with a `ClusterSecretStore` named `vault-backend`
-- Vault secret at `secret/data/campaign-center/dev/task-mservice` containing `MYSQL_DSN`
-- Traefik ingress controller with class `traefik`
+- Vault secret at `campaign-center/dev/task-mservice` (all keys synced automatically)
+- Traefik IngressRoute via `traefik-routes` ArgoCD Application
 - `acr-secret` image pull secret in the `campaign-dev` namespace
 
 Steps:
 
-1. Push this repository to GitHub and update the placeholder org in `argocd/applications/task-mservice.yaml`:
+1. Push this repository to GitHub on the `dev` branch.
 
-   ```yaml
-   repoURL: git@github.com:<your-org>/campaign-center-gitops.git
-   ```
+2. Ensure `apps/task-mservice/values.yaml` and `traefik/ingressroute.yaml` are present.
 
-2. Ensure the `dev` branch contains `apps/task-mservice/values.yaml`.
-
-3. Apply the ArgoCD Application:
-
-   ```bash
-   kubectl apply -f argocd/applications/task-mservice.yaml
-   ```
-
-4. Verify sync in the ArgoCD UI or CLI:
+3. Verify sync in the ArgoCD UI or CLI:
 
    ```bash
    argocd app get task-mservice
+   argocd app get traefik-routes
    kubectl get pods -n campaign-dev -l app.kubernetes.io/name=task-mservice
    ```
 
-5. Confirm ingress routing once DNS points `task-api.dev.example.com` at the cluster.
+4. Confirm routing once DNS points `api.dev.example.com` at the cluster (`/task-ms/v1/ping`).
 
 ## Local validation
 
