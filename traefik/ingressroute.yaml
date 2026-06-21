@@ -1,5 +1,6 @@
 # Shared Traefik HTTP routes for Campaign Center microservices.
-# Deployed to kube-system; backends may live in app namespaces (e.g. campaign-dev).
+# Deployed to the app namespace (e.g. campaign-dev) because Traefik disallows
+# cross-namespace service references by default on k3s.
 #
 # One host per environment; route by path prefix:
 #   /task-ms       -> task-mservice
@@ -11,7 +12,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: campaign-center-http
-  namespace: kube-system
+  namespace: campaign-dev
   labels:
     app.kubernetes.io/part-of: campaign-center
     app.kubernetes.io/managed-by: argocd
@@ -23,5 +24,4 @@ spec:
       kind: Rule
       services:
         - name: task-mservice
-          namespace: campaign-dev
           port: 8080
