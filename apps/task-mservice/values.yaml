@@ -43,7 +43,7 @@ externalSecret:
   data:
     - secretKey: MYSQL_DSN
       remoteRef:
-        key: secret/data/campaign-center/dev/task-mservice
+        key: campaign-center/dev/task-mservice
         property: MYSQL_DSN
 
 envFromSecret:
