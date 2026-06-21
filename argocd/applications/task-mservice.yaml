@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:nusiss-capstone-project/campaign-gitops.git
+    repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
     targetRevision: dev
     path: charts/go-service
     helm:
