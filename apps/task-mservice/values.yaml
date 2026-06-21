@@ -14,6 +14,12 @@ containerPorts:
   http: 8080
   grpc: 5001
 
+probes:
+  liveness:
+    path: /task-ms/v1/ping
+  readiness:
+    path: /task-ms/v1/ping
+
 configFile:
   enabled: true
   name: config.yml
