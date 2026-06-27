@@ -23,7 +23,7 @@ probes:
 configFile:
   enabled: true
   name: config.yml
-  mountPath: /app/config.yml
+  mountPath: /app/resources/config.yml
   content:
     grpc:
       host: "0.0.0.0"
@@ -41,6 +41,16 @@ configFile:
         - https://campaign-center-admin-web.vercel.app
         - https://finverse-web.vercel.app
         - http://localhost:3000
+    kafka:
+      enabled: true
+      brokers:
+        # In-cluster Kafka: <service>.<namespace>.svc.cluster.local:<port>
+        - kafka.kafka.svc.cluster.local:9092
+      group_id: task-mservice
+      client_id: task-mservice
+      topics:
+        - deposit.events
+        - user.events.registered
 
 externalSecret:
   enabled: true
