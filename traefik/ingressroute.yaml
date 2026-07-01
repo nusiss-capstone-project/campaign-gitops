@@ -3,9 +3,9 @@
 # cross-namespace service references by default on k3s.
 #
 # One host per environment; route by path prefix:
-#   /task-ms       -> task-mservice
-#   /campaign-api  -> campaign-api (future)
-#   /reward-service -> reward-service (future)
+#   /task-ms              -> task-mservice
+#   /campaign-center-api  -> campaign-center-api
+#   /reward-service       -> reward-service (future)
 #
 # Branch strategy: dev / staging / main each carry their own ingressroute.yaml.
 apiVersion: traefik.io/v1alpha1
@@ -24,4 +24,9 @@ spec:
       kind: Rule
       services:
         - name: task-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api`)
+      kind: Rule
+      services:
+        - name: campaign-center-api
           port: 8080
