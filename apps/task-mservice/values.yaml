@@ -2,7 +2,7 @@ serviceName: task-mservice
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/task-mservice
-  tag: dev-202606210918
+  tag: dev-202607011511
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
