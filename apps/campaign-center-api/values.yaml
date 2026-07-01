@@ -2,7 +2,7 @@ serviceName: campaign-center-api
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/campaign-center-api
-  tag: dev-latest
+  tag: dev-202607010532
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
