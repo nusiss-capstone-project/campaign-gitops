@@ -45,7 +45,7 @@ configFile:
       enabled: true
       brokers:
         # In-cluster Kafka: <service>.<namespace>.svc.cluster.local:<port>
-        - kafka.kafka.svc.cluster.local:9092
+        - kafka.messaging.svc.cluster.local:9092
       group_id: task-mservice
       client_id: task-mservice
       topics:

@@ -44,7 +44,7 @@ configFile:
     kafka:
       enabled: true
       brokers:
-        - kafka.kafka.svc.cluster.local:9092
+        - kafka.messaging.svc.cluster.local:9092
       group_id: reward-mservice
       client_id: reward-mservice
       topics:
