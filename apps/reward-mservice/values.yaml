@@ -37,6 +37,7 @@ configFile:
       level: debug
       file_path: ./logs/reward-mservice.log
     system:
+      service_name: reward-mservice
       allowed_origins:
         - https://campaign-center-admin-web.vercel.app
         - https://finverse-web.vercel.app
@@ -50,6 +51,8 @@ configFile:
       topics:
         - reward.finance_doc.approved
         - reward.issue_request.approved
+        - reward.distribution.execute
+        - reward.distribution.result
 
 externalSecret:
   enabled: true
