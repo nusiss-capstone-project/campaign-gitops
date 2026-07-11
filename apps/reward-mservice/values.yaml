@@ -2,7 +2,7 @@ serviceName: reward-mservice
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/reward-mservice
-  tag: dev-202607110959
+  tag: dev-202607111241
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
