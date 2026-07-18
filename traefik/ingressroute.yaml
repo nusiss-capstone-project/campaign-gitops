@@ -6,6 +6,7 @@
 #   /task-ms              -> task-mservice
 #   /campaign-center-api  -> campaign-center-api
 #   /reward-ms            -> reward-mservice
+#   /identity-ms          -> identity-mservice
 #
 # Branch strategy: dev / staging / main each carry their own ingressroute.yaml.
 apiVersion: traefik.io/v1alpha1
@@ -34,4 +35,9 @@ spec:
       kind: Rule
       services:
         - name: reward-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/identity-ms`)
+      kind: Rule
+      services:
+        - name: identity-mservice
           port: 8080
