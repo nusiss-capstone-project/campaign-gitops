@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockpass
+  namespace: mockpass
+  labels:
+    app.kubernetes.io/name: mockpass
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mockpass
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mockpass
+    spec:
+      containers:
+        - name: mockpass
+          image: opengovsg/mockpass:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5156
+              protocol: TCP
+          env:
+            - name: MOCKPASS_PORT
+              value: "5156"
+            - name: SHOW_LOGIN_PAGE
+              value: "true"
+            - name: MOCKPASS_STATELESS
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mockpass
+  namespace: mockpass
+  labels:
+    app.kubernetes.io/name: mockpass
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mockpass
+  ports:
+    - name: http
+      port: 5156
+      targetPort: http
+      protocol: TCP
+---
+# Strip /mockpass so MockPass receives /singpass/... paths as designed.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: mockpass-strip-prefix
+  namespace: mockpass
+  labels:
+    app.kubernetes.io/name: mockpass
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  stripPrefix:
+    prefixes:
+      - /mockpass
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: mockpass-http
+  namespace: mockpass
+  labels:
+    app.kubernetes.io/name: mockpass
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`campaignhub.best`) && PathPrefix(`/mockpass`)
+      kind: Rule
+      middlewares:
+        - name: mockpass-strip-prefix
+      services:
+        - name: mockpass
+          port: 5156
