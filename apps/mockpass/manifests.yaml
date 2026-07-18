@@ -32,6 +32,8 @@ spec:
               value: "true"
             - name: MOCKPASS_STATELESS
               value: "true"
+            - name: NODE_OPTIONS
+              value: "--max-http-header-size=65536"
           resources:
             requests:
               cpu: 50m
