@@ -87,11 +87,12 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     # Static assets: keep /mockpass prefix (MockPass expects /mockpass/resources/...)
     - match: Host(`campaignhub.best`) && PathPrefix(`/mockpass/resources`)
       kind: Rule
-      priority: 100
+      priority: 110
       services:
         - name: mockpass
           port: 5156
