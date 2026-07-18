@@ -38,7 +38,7 @@ spec:
               memory: 128Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
@@ -97,15 +97,7 @@ spec:
           port: 5156
 
     # API routes: strip /mockpass so MockPass receives /singpass/... /corppass/... etc.
-    - match: Host(`campaignhub.best`) && (
-        PathPrefix(`/mockpass/singpass`) ||
-        PathPrefix(`/mockpass/corppass`) ||
-        PathPrefix(`/mockpass/myinfo`) ||
-        PathPrefix(`/mockpass/sgid`) ||
-        PathPrefix(`/mockpass/sign-v3`) ||
-        PathPrefix(`/mockpass/fapi`) ||
-        PathPrefix(`/mockpass/v2`)
-      )
+    - match: Host(`campaignhub.best`) && (PathPrefix(`/mockpass/singpass`) || PathPrefix(`/mockpass/corppass`) || PathPrefix(`/mockpass/myinfo`) || PathPrefix(`/mockpass/sgid`) || PathPrefix(`/mockpass/sign-v3`) || PathPrefix(`/mockpass/fapi`) || PathPrefix(`/mockpass/v2`))
       kind: Rule
       priority: 90
       middlewares:
