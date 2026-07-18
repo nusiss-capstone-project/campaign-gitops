@@ -42,9 +42,9 @@ configFile:
         - https://finverse-web.vercel.app
         - http://localhost:3000
     singpass:
-      redirect_uri: "http://identity-mservice.campaign-dev.svc.cluster.local:8080/identity-ms/v1/kyc/singpass/callback"
+      redirect_uri: "http://campaignhub.best/identity-ms/v1/kyc/singpass/callback"
       scope: "openid name email uinfin mobileno"
-      issuer_url: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2"
+      issuer_url: "http://campaignhub.best/mockpass/singpass/v2"
       token_url: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/token"
       user_info_url: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/userinfo"
       jwks_uri: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/.well-known/keys"
