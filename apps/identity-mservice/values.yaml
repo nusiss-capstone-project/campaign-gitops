@@ -45,6 +45,7 @@ configFile:
       redirect_uri: "http://campaignhub.best/identity-ms/v1/kyc/singpass/callback"
       scope: "openid name email uinfin mobileno"
       issuer_url: "http://campaignhub.best/mockpass/singpass/v2"
+      assertion_aud: "http://campaignhub.best/singpass/v2"
       token_url: "http://campaignhub.best/mockpass/singpass/v2/token"
       user_info_url: "http://campaignhub.best/mockpass/singpass/v2/userinfo"
       jwks_uri: "http://campaignhub.best/mockpass/singpass/v2/.well-known/keys"
