@@ -108,3 +108,11 @@ spec:
       services:
         - name: mockpass
           port: 5156
+
+    # Login page links use absolute paths without /mockpass (e.g. /singpass/v2/auth/custom-profile).
+    - match: Host(`campaignhub.best`) && PathPrefix(`/singpass`)
+      kind: Rule
+      priority: 80
+      services:
+        - name: mockpass
+          port: 5156
