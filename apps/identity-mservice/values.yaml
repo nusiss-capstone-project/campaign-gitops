@@ -50,6 +50,11 @@ configFile:
       token_url: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/token"
       user_info_url: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/userinfo"
       jwks_uri: "http://mockpass.mockpass.svc.cluster.local:5156/singpass/v2/.well-known/keys"
+    kafka:
+      enabled: true
+      brokers:
+        - kafka.messaging.svc.cluster.local:9092
+      client_id: identity-mservice
 
 externalSecret:
   enabled: true
