@@ -23,21 +23,29 @@ spec:
   routes:
     - match: Host(`campaignhub.best`) && PathPrefix(`/task-ms`)
       kind: Rule
+      middlewares:
+        - name: identity-forward-auth
       services:
         - name: task-mservice
           port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api`)
       kind: Rule
+      middlewares:
+        - name: identity-forward-auth
       services:
         - name: campaign-center-api
           port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/reward-ms`)
       kind: Rule
+      middlewares:
+        - name: identity-forward-auth
       services:
         - name: reward-mservice
           port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/identity-ms`)
       kind: Rule
+      middlewares:
+        - name: identity-forward-auth
       services:
         - name: identity-mservice
           port: 8080
