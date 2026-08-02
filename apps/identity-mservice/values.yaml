@@ -2,7 +2,7 @@ serviceName: identity-mservice
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/identity-mservice
-  tag: dev-202608020302
+  tag: dev-202608020357
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
