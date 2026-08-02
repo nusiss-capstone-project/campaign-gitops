@@ -49,6 +49,11 @@ configFile:
         - https://campaign-center-admin-web.vercel.app
         - https://finverse-web.vercel.app
         - http://localhost:3000
+    oss:
+      endpoint: oss-ap-southeast-1.aliyuncs.com
+      bucket: campaign-center-img
+      public_base_url: "https://cdn.campaignhub.best"
+      key_prefix: campaign-center
 
 externalSecret:
   enabled: true
