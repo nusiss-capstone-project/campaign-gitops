@@ -2,7 +2,7 @@ serviceName: payment-mservice
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/payment-mservice
-  tag: dev-202608041002
+  tag: dev-202608041227
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
