@@ -40,6 +40,13 @@ spec:
       services:
         - name: payment-mservice
           port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/asset-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: asset-mservice
+          port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/identity-ms`)
       kind: Rule
       middlewares:
