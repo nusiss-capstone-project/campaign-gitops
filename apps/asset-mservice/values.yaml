@@ -41,11 +41,17 @@ configFile:
         - https://campaign-center-admin-web.vercel.app
         - https://finverse-web.vercel.app
         - http://localhost:3000
+    payment_grpc:
+      host: payment-mservice.campaign-dev.svc.cluster.local
+      port: 5001
     kafka:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
+      group_id: asset-mservice
       client_id: asset-mservice
+      topics:
+        - payment.transaction.updated
 
 externalSecret:
   enabled: true
