@@ -54,6 +54,24 @@ configFile:
       bucket: campaign-center-img
       public_base_url: "https://cdn.campaignhub.best"
       key_prefix: campaign-center
+    usergroup_grpc:
+      host: usergroup-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    task_grpc:
+      host: task-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    reward_grpc:
+      host: reward-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    kafka:
+      enabled: true
+      brokers:
+        - kafka.messaging.svc.cluster.local:9092
+      group_id: campaign-center-api
+      client_id: campaign-center-api
+      topics:
+        - task.events.completed
+        - reward.distribution.result
 
 externalSecret:
   enabled: true
