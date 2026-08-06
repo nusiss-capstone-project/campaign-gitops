@@ -44,6 +44,9 @@ configFile:
     payment_grpc:
       host: payment-mservice.campaign-dev.svc.cluster.local
       port: 5001
+    identity:
+      host: identity-mservice.campaign-dev.svc.cluster.local
+      port: 5001
     kafka:
       enabled: true
       brokers:
