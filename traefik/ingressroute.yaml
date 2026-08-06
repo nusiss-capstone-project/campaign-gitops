@@ -47,6 +47,13 @@ spec:
       services:
         - name: asset-mservice
           port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/usergroup-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: usergroup-mservice
+          port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/identity-ms`)
       kind: Rule
       middlewares:
