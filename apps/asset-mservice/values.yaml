@@ -2,7 +2,7 @@ serviceName: asset-mservice
 
 image:
   repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/asset-mservice
-  tag: dev-202608061352
+  tag: dev-202608061440
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
