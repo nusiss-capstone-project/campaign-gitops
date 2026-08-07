@@ -20,10 +20,8 @@ spec:
         IgnoringStdout: false
         ContainerFilters:
           K8sNamespaceRegex: ^campaign-dev$
-    processors:
-      - Type: processor_parse_json_native
-        SourceKey: content
-        KeepSource: true
+    # Start without processors so raw lines land in SLS; add JSON parse after data flows.
+    processors: []
     flushers:
       - Type: flusher_sls
         Logstore: k8s-campaign-center-stdout-dev

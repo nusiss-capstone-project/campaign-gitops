@@ -27,3 +27,24 @@ enableHybrid: false
 
 legacy:
   slsMonitoring: false
+
+# Keep agent light on small k3s nodes (defaults are 2 CPU / 2Gi).
+dsAgent:
+  cpuLimitsCore: 0.5
+  memLimitsMB: 512
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+operator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
