@@ -21,5 +21,8 @@ Sync **loongcollector** first (CRDs), then **loongcollector-config**. Automated 
 
 1. Confirm ExternalSecret created `loongcollector-sls-credentials` in `kube-system`
 2. Confirm `loongcollector-ds` pods are Ready
-3. Confirm SLS machine group for `campaign-k3s-dev` is online
-4. Hit any `campaign-dev` API and query Logstore: `__tag__:__namespace__: campaign-dev`
+3. **SLS console (required for self-managed k3s):** create a **user-defined** machine group
+   - Identifier: `k8s-group-campaign-k3s-dev` (must match `clusterID` → `k8s-group-<clusterID>`)
+   - Wait until heartbeat is **OK**
+4. Confirm Pipeline CR is applied: `kubectl get clusteraliyunpipelineconfig campaign-dev-stdout -o yaml`
+5. Hit any `campaign-dev` API and query Logstore: `__tag__:__namespace__: campaign-dev`

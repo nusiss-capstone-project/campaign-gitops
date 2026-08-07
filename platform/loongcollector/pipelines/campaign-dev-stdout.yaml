@@ -1,4 +1,8 @@
 # Collect container stdout/stderr from campaign-dev only → one SLS Logstore.
+#
+# Prerequisite (self-managed k3s): create a user-defined machine group in SLS
+# Project with identifier exactly: k8s-group-campaign-k3s-dev
+# Heartbeat must be OK before logs appear.
 apiVersion: telemetry.alibabacloud.com/v1alpha1
 kind: ClusterAliyunPipelineConfig
 metadata:
@@ -13,6 +17,8 @@ spec:
     name: log-service-1558398056044027-ap-southeast-1
   logstores:
     - name: k8s-campaign-center-stdout-dev
+  machineGroups:
+    - name: k8s-group-campaign-k3s-dev
   config:
     inputs:
       - Type: input_container_stdio
@@ -20,7 +26,6 @@ spec:
         IgnoringStdout: false
         ContainerFilters:
           K8sNamespaceRegex: ^campaign-dev$
-    # Start without processors so raw lines land in SLS; add JSON parse after data flows.
     processors: []
     flushers:
       - Type: flusher_sls

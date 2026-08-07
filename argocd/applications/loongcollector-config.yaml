@@ -23,15 +23,29 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
+      # Required for ignoreDifferences to clear OutOfSync with auto-sync.
+      - RespectIgnoreDifferences=true
   ignoreDifferences:
     - group: external-secrets.io
       kind: ExternalSecret
       jsonPointers:
         - /status
+        - /metadata/annotations
+        - /metadata/managedFields
+    - group: ""
+      kind: Secret
+      name: loongcollector-sls-credentials
+      jsonPointers:
+        - /data
+        - /metadata/annotations
+        - /metadata/labels
+        - /metadata/managedFields
+        - /metadata/ownerReferences
     - group: telemetry.alibabacloud.com
       kind: ClusterAliyunPipelineConfig
       jsonPointers:
         - /status
         - /metadata/generation
+        - /metadata/annotations
         - /metadata/managedFields
+        - /metadata/finalizers
