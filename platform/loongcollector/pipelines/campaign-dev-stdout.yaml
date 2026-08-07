@@ -1,9 +1,4 @@
-# Collect container stdout/stderr → one SLS Logstore.
-#
-# Temporary: no Namespace filter (diagnose empty Logstore).
-# After data appears, restore:
-#   ContainerFilters:
-#     K8sNamespaceRegex: ^campaign-dev$
+# Collect container stdout/stderr from campaign-dev → one SLS Logstore.
 #
 # Prerequisite: SLS user-defined machine group k8s-group-campaign-k3s-dev heartbeat OK.
 apiVersion: telemetry.alibabacloud.com/v1alpha1
@@ -27,7 +22,13 @@ spec:
       - Type: input_container_stdio
         IgnoringStderr: false
         IgnoringStdout: false
-    processors: []
+        ContainerFilters:
+          K8sNamespaceRegex: ^campaign-dev$
+    processors:
+      - Type: processor_parse_json_native
+        SourceKey: content
+        KeepingSourceWhenParseFail: true
+        KeepingSourceWhenParseSucceed: true
     flushers:
       - Type: flusher_sls
         Logstore: k8s-campaign-center-stdout-dev
