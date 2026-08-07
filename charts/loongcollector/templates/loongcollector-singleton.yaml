@@ -1,0 +1,134 @@
+{{ if or .Values.enableEBPF .Values.legacy.slsMonitoring }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loongcollector-singleton
+  namespace: {{ .Release.Namespace }}
+  labels:
+    k8s-app: loongcollector-singleton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: loongcollector-singleton
+  template:
+    metadata:
+      labels:
+        k8s-app: loongcollector-singleton
+        kubernetes.io/cluster-service: "true"
+    spec:
+      serviceAccountName: {{ .Values.operator.serviceAccountName }}
+      affinity:
+        {{- toYaml .Values.singletonAgent.affinity | nindent 8 }}
+      {{- if .Values.singletonAgent.tolerations }}
+      tolerations:
+        {{- toYaml .Values.singletonAgent.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.singletonAgent.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.singletonAgent.dnsConfig | nindent 8 }}
+      {{- end }}
+      dnsPolicy: {{ .Values.singletonAgent.dnsPolicy }}
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      {{- if eq .Values.clusterProfile "Edge" }}
+        alibabacloud.com/is-edge-worker: "false"
+      {{- end }}
+      containers:
+      - name: loongcollector
+        image: {{ include "replaceRegionId"  (list . .Values.singletonAgent.image.repository) }}:{{ .Values.singletonAgent.image.tag }}
+        imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+        env:
+          - name: HTTP_PROBE_PORT
+            value: "7953"
+          - name: "ALIYUN_LOGTAIL_USER_ID"
+            value: "{{ include "loongcollector.uid" . }}"
+            # key to start env config      
+          - name: "ALICLOUD_LOG_DOCKER_ENV_CONFIG"
+            value: "false"
+          - name: "DEPLOY_MODE"
+            value: "singleton"
+          - name: "ENABLE_KUBERNETES_META"
+            value: "true"
+          - name: "ALICLOUD_LOG_ECS_FLAG"
+            value: "false"
+          - name: "ALICLOUD_LOG_DEFAULT_MACHINE_GROUP"
+            value: "{{ include "loongcollector.baseMachineGroup" . }}-singleton"        
+          - name: "ALIYUN_LOGTAIL_USER_DEFINED_ID"
+            value: "$(ALICLOUD_LOG_DEFAULT_MACHINE_GROUP),{{ .Values.singletonAgent.externalUserDefineIDs }}"
+          - name: "ALIYUN_LOGTAIL_CONFIG"
+            value: "/usr/local/ilogtail/ilogtail_config.json"
+          - name: ALIYUN_LOG_ENV_TAGS
+            value: "GLOBAL_CLUSTER_ID"
+          - name: "GLOBAL_CLUSTER_ID"
+            value: {{ .Values.clusterID }}
+          - name: "GLOBAL_CLUSTER_TYPE"
+            value: "ack"
+          # resource limit for logtail self process
+          - name: "LOONG_CPU_USAGE_LIMIT"
+            value: "{{.Values.singletonAgent.cpuLimitsCore}}"
+          - name: "LOONG_MEM_USAGE_LIMIT"
+            value: "{{.Values.singletonAgent.memLimitsMB}}"      
+          - name: KUBERNETES_METADATA_PORT
+            value: '{{ .Values.singletonAgent.service.port }}'
+          {{- range .Values.singletonAgent.env }}
+          - name: {{ .name }}
+            {{- if .value }}
+            value: {{ .value | quote }}
+            {{- end }}
+            {{- if .valueFrom }}
+            valueFrom:
+              {{- toYaml .valueFrom | nindent 14 }}
+            {{- end }}
+          {{- end }}
+        ports:
+          - containerPort: {{ .Values.singletonAgent.service.port }}
+            name: singleton
+            protocol: {{ .Values.singletonAgent.service.protocol }}
+        {{- if .Values.singletonAgent.resources }}
+        resources:
+          {{- toYaml .Values.singletonAgent.resources | nindent 10 }}
+        {{- else}}
+        resources:
+          limits:
+            cpu: "{{.Values.singletonAgent.cpuLimitsCore}}"
+            memory: "{{.Values.singletonAgent.memLimitsMB}}Mi"
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          procMount: Default
+          seccompProfile:
+            type: RuntimeDefault 
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 7953
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /liveness
+            port: 7953
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+          - mountPath: /usr/local/ilogtail/ilogtail_config.json
+            name: loongcollector-config
+            subPath: ilogtail_config.json
+      volumes:
+      - name: loongcollector-config
+        configMap:
+          defaultMode: 420
+          name: loongcollector-config
+{{- end }}
+
+          

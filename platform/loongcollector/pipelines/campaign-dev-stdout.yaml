@@ -1,0 +1,29 @@
+# Collect container stdout/stderr from campaign-dev only → one SLS Logstore.
+apiVersion: telemetry.alibabacloud.com/v1alpha1
+kind: ClusterAliyunPipelineConfig
+metadata:
+  name: campaign-dev-stdout
+  labels:
+    app.kubernetes.io/name: loongcollector
+    app.kubernetes.io/part-of: campaign-center
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project:
+    name: log-service-1558398056044027-ap-southeast-1
+  logstores:
+    - name: k8s-campaign-center-stdout-dev
+  config:
+    inputs:
+      - Type: input_container_stdio
+        IgnoringStderr: false
+        IgnoringStdout: false
+        ContainerFilters:
+          K8sNamespaceRegex: ^campaign-dev$
+    processors:
+      - Type: processor_parse_json_native
+        SourceKey: content
+        KeepSource: true
+    flushers:
+      - Type: flusher_sls
+        Logstore: k8s-campaign-center-stdout-dev

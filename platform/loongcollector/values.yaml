@@ -1,0 +1,29 @@
+# LoongCollector → Alibaba Cloud SLS (ap-southeast-1 Intranet)
+# Chart: charts/loongcollector (vendored upstream 3.2.6 + existingSecret patch)
+
+projectName: log-service-1558398056044027-ap-southeast-1
+region: ap-southeast-1
+# Same account id as in the Project name / Vault key ALI_UID
+aliUid: "1558398056044027"
+net: Intranet
+clusterID: campaign-k3s-dev
+
+# Do not put AK/SK in Git. Synced by ExternalSecret → loongcollector-sls-credentials
+accessKeyID: ""
+accessKeySecret: ""
+existingSecret: loongcollector-sls-credentials
+existingSecretKeys:
+  accessKeyID: access-key-id
+  accessKeySecret: access-key-secret
+
+# Self-managed k3s (not ACK)
+clusterType: ""
+clusterProfile: ""
+
+enablePrometheus: false
+enablePilot: false
+enableEBPF: false
+enableHybrid: false
+
+legacy:
+  slsMonitoring: false

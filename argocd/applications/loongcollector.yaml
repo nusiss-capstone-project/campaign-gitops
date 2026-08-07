@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loongcollector
+  namespace: argocd
+  annotations:
+    # Ensure CRDs/agent exist before pipeline configs (separate app) sync.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
+    targetRevision: dev
+    path: charts/loongcollector
+    helm:
+      valueFiles:
+        - ../../platform/loongcollector/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    # Start manual; enable automated after DaemonSet + SLS machine group look healthy.
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

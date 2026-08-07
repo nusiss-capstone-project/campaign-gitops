@@ -1,0 +1,249 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}
+  labels:
+    {{- include "loongcollector-operator.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "loongcollector-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "loongcollector-operator.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.operator.serviceAccountName }}
+      affinity:
+        {{- toYaml .Values.operator.affinity | nindent 8 }}
+      {{- if .Values.operator.tolerations }}
+      tolerations:
+        {{- toYaml .Values.operator.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.operator.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.operator.dnsConfig | nindent 8 }}
+      {{- end }}
+      dnsPolicy: {{ .Values.operator.dnsPolicy }}
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      {{- if eq .Values.clusterProfile "Edge" }}
+        alibabacloud.com/is-edge-worker: "false"
+      {{- end }}
+      containers:
+        - name: operator
+          image: "{{ include "replaceRegionId"  (list . .Values.operator.image.repository) }}:{{ .Values.operator.image.tag }}"
+          imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+          env:
+            - name: "GLOBAL_OPERATOR_SERVICE_PORT"
+              value: "8888"
+            - name: "ENABLE_WEBHOOKS"
+              value: "true"
+            - name: "GLOBAL_REGION"
+              value: "{{ include "loongcollector.rawRegion" . }}"
+            - name: "GLOBAL_PROJECT"
+              value: "{{ include "loongcollector.project" . }}"
+            - name: "GLOBAL_NAMESPACE"
+              value: {{ .Release.Namespace }}
+            - name: "GLOBAL_CLUSTER_ID"
+              value: {{ .Values.clusterID }}
+            - name: "GLOBAL_ACS_K8S_FLAG"
+            {{ if eq (include "shouldMountOperatorAddon" . | trim) "true"}}
+              value: "true"
+            {{ else }}
+              value: "false"
+            {{ end }}
+            {{- if .Values.existingSecret }}
+            - name: "GLOBAL_ACCESS_KEY_ID"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: {{ .Values.existingSecretKeys.accessKeyID | default "access-key-id" }}
+            - name: "GLOBAL_ACCESS_KEY_SECRET"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: {{ .Values.existingSecretKeys.accessKeySecret | default "access-key-secret" }}
+            {{- else if eq (include "isACK" . | trim) "false" }}
+            - name: "GLOBAL_ACCESS_KEY_ID"
+              value: "{{ .Values.accessKeyID }}"
+            - name: "GLOBAL_ACCESS_KEY_SECRET"
+              value: "{{ .Values.accessKeySecret }}"
+            {{- else if eq (include "shouldMountOperatorAddon" . | trim) "false"}}
+            - name: "GLOBAL_ACCESS_KEY_ID"
+              valueFrom:
+                secretKeyRef:
+                  name: alibaba-addon-secret
+                  key: access-key-id
+            - name: "GLOBAL_ACCESS_KEY_SECRET"
+              valueFrom:
+                secretKeyRef:
+                  name: alibaba-addon-secret
+                  key: access-key-secret
+            {{- end }}
+            - name: GLOBAL_CLIENT_AUTH_VERSION
+              value: {{ .Values.slsClientAuthVersion | default "v4" | quote }}
+            - name: "GLOBAL_ENDPOINT"
+              value: "{{ include "loongcollector.endpoint" . }}"
+            - name: GLOBAL_PRODUCT_API_DOMAIN
+              value: "$(GLOBAL_ENDPOINT)/open-api"
+            - name: "GLOBAL_DAEMONSET_MACHINE_GROUP"
+              value: "{{ include "loongcollector.baseMachineGroup" . }}"
+            - name: "GLOBAL_DAEMONSET_USER_DEFINED_IDS"
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)"
+            - name: "GLOBAL_CLUSTER_MACHINE_GROUP"
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-cluster"
+            - name: "GLOBAL_CLUSTER_USER_DEFINED_IDS"
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-cluster"
+
+            {{- range .Values.operator.env }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ .value | quote }}
+              {{- end }}
+              {{- if .valueFrom }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- end }}
+            {{- end }}
+
+            {{ if .Values.legacy.slsMonitoring }}  
+            - name: "GLOBAL_STATEFULSET_MACHINE_GROUP"   
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-statefulset"
+            - name: "GLOBAL_STATEFULSET_USER_DEFINED_ID"
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-statefulset"
+            {{ end }}
+            - name: "GLOBAL_SINGLETON_MACHINE_GROUP"
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-singleton"
+            - name: "GLOBAL_SINGLETON_USER_DEFINED_IDS"
+            {{ if .Values.legacy.slsMonitoring }}   
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-singleton,$(GLOBAL_DAEMONSET_MACHINE_GROUP)-singleton-logtail-statefulset-0"
+            {{ else }}
+              value: "$(GLOBAL_DAEMONSET_MACHINE_GROUP)-singleton"
+            {{ end }}
+            - name: "GLOBAL_CLUSTER_AGENT_SERVICE_SWITCH"
+              value: "false"
+            - name: "GLOBAL_CLUSTER_AGENT_SERVICE_NAMESPACE"
+              value: {{ .Release.Namespace }}
+            - name: "GLOBAL_CLUSTER_AGENT_SERVICE_SELECTOR"
+              value: "logtail-statefulset"
+            - name: "GLOBAL_AGENT_ENDPOINT"
+              value: "http://logtail-statefulset.{{ .Release.Namespace }}:18689/export/port"
+            - name: "GLOBAL_ENABLE_PILOT"
+              value: "{{ .Values.enablePilot }}"
+            - name: "GLOBAL_ENABLE_PROMETHEUS"
+              value: "{{ .Values.enablePrometheus }}"
+
+            # prometheus
+            - name: PROMETHEUS_PROJECT
+              value: "{{ .Values.operator.prometheus.project }}"
+            - name: PROMETHEUS_METRIC_STORE
+              value: "{{ .Values.operator.prometheus.metricStore }}"
+            - name: PROMETHEUS_COLLECTOR_DEPLOYMENT_NAME
+              value: "loongcollector-cluster"
+            - name: PROMETHEUS_COLLECTOR_CONTAINER_NAME
+              value: "loongcollector-cluster"
+            - name: PROMETHEUS_SERVICE
+              value: "{{ include "loongcollector-operator.fullname" . }}:{{ .Values.operator.service.port }}"
+            - name: PROMETHEUS_COLLECTOR_LABEL_SELECTOR
+              value: "k8s-app=loongcollector-cluster"
+            - name: PROMETHEUS_TARGETS_PER_CORE
+              value: "250"
+            - name: PROMETHEUS_SERIES_PER_GIBYTES
+              value: "1200000"
+            # pilot
+            - name: ONEPILOT_REGION_ID
+              value: "{{ include "loongcollector.rawRegion" . }}"
+            - name: ONEPILOT_USER_ID
+              value: "{{ include "loongcollector.uid" . }}"
+            - name: ONEPILOT_CLUSTER_ID
+              value: "{{ .Values.clusterID }}"
+            - name: ONEPILOT_TAG
+              value: "{{ .Chart.Version }}"
+            {{- if eq .Values.operator.admissionRegistration.failurePolicy "Fail" }}
+            - name: ONEPILOT_STRICT_MODE
+              value: "true"
+            {{- end }}
+            - name: ONEPILOT_INIT_IMAGE_URL
+              value: "registry-{{ include "loongcollector.rawRegion" . }}-vpc.ack.aliyuncs.com/acs/ack-onepilot-init:5.1.1"
+            - name: ONEPILOT_ALPINE_IMAGE_URL
+              value: "registry-{{ include "loongcollector.rawRegion" . }}-vpc.ack.aliyuncs.com/acs/ack-onepilot-alpine:3.18-multi-arch"
+            - name: MSE_PILOT_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: ARMS_PILOT_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: ONE_PILOT_ACCESSKEY
+              value: {{ .Values.accessKeyID }}
+            - name: ONE_PILOT_ACCESSKEY_SECRET
+              value: {{ .Values.accessKeySecret }}
+            - name: ONEPILOT_INIT_RESOURCE_REQUESTS_CPU
+              value: "{{ .Values.operator.pilot.resources.requests.cpu }}"
+            - name: ONEPILOT_INIT_RESOURCE_REQUESTS_MEM
+              value: "{{ .Values.operator.pilot.resources.requests.memory }}"
+            - name: ONEPILOT_INIT_RESOURCE_LIMITS_CPU
+              value: "{{ .Values.operator.pilot.resources.limits.cpu }}"
+            - name: ONEPILOT_INIT_RESOURCE_LIMITS_MEM
+              value: "{{ .Values.operator.pilot.resources.limits.memory }}"
+            {{- if eq .Values.operator.pilot.clusterType "ExternalKubernetes" }}
+            - name: EXTERNAL_KUBERNETES_ENABLE
+              value: "true"
+            {{- end }}
+            - name: ONEPILOT_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ONEPILOT_DOWNLOAD_TIMEOUT_SEC
+              value: "{{ .Values.operator.pilot.downloadTimeout }}"
+          livenessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.operator.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5           
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.operator.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            procMount: Default
+            seccompProfile:
+              type: RuntimeDefault 
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}
+          ports:
+          - containerPort: {{ .Values.operator.webhookService.port }}
+            name: webhook-server
+            protocol: {{ .Values.operator.webhookService.protocol }}
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
+          {{- if eq (include "shouldMountOperatorAddon" . | trim) "true"}}
+          - name: addon-token
+            mountPath: "/var/addon"
+            readOnly: true
+          {{ end }}
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: {{ include "loongcollector-operator.fullname" . }}-webhook-server-cert
+
+      {{- if eq (include "shouldMountOperatorAddon" . | trim) "true"}}
+      - name: addon-token
+        secret:
+          secretName: addon.log.token
+          optional: true
+          items:
+          - key: addon.token.config
+            path: token-config
+      {{- end }}

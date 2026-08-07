@@ -1,0 +1,62 @@
+{{- if ne .Values.clusterProfile "Serverless" }}
+---
+# loongcollector-ds
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: loongcollector-ds
+  namespace: {{ .Release.Namespace }}
+  labels:
+    k8s-app: loongcollector-ds
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loongcollector-ds
+  labels:
+    app: loongcollector-ds
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - "nodes"
+  - "nodes/metrics"
+  verbs:
+  - get
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - configmaps
+  verbs:
+  - update
+  - get
+  resourceNames:         # 限制名称
+  - "alibaba-log-configuration"
+- apiGroups:
+    - ""
+  resources:
+    - "configmaps"
+  verbs:
+    - "create"  
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: loongcollector-ds-{{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: loongcollector-ds
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: loongcollector-ds
+  apiGroup: rbac.authorization.k8s.io
+
+{{- end }}

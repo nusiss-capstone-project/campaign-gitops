@@ -1,0 +1,318 @@
+# 本集群要采集到的Project名
+projectName: ""
+# Project所属地域，例如上海：cn-shanghai
+region: ""
+# Project所属主账号uid，请用引号包围，例如"123456789"
+aliUid: ""
+# 使用网络，可选参数：公网Internet，VPCInternal，内网Intranet，默认使用公网
+net: Internet
+# 主账号或者子账号的AK，SK
+accessKeyID: ""
+accessKeySecret: ""
+# Prefer mounting AK/SK from an existing Secret (e.g. synced by External Secrets).
+# When set, accessKeyID/accessKeySecret above are ignored.
+existingSecret: ""
+existingSecretKeys:
+  accessKeyID: access-key-id
+  accessKeySecret: access-key-secret
+# 自定义集群ID，命名只支持大小写，数字，短划线(-)。
+clusterID: ""
+
+isFinance: false
+
+enablePrometheus: false
+enablePilot: false
+enableEBPF: false
+enableHybrid: false
+
+baseMachineGroupName: ""
+
+slsClientAuthVersion: v4
+
+clusterAgent:
+  serviceAccountName: loongcollector-cluster
+  image: 
+    repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector
+    tag: v3.2.6.0-109e584-aliyun
+  cpuLimitsCore: 2
+  memLimitsMB: 2048
+  resources: {}
+  externalUserDefineIDs: ""
+  tolerations: []
+  dnsPolicy: "ClusterFirst"
+  dnsConfig: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - preference:
+            matchExpressions:
+              - key: k8s.aliyun.com
+                operator: NotIn
+                values:
+                  - 'true'
+          weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: alibabacloud.com/nodepool-type
+            operator: NotIn
+            values:
+              - hybridcloud
+          - key: alibabacloud.com/lingjun-worker
+            operator: NotIn
+            values:
+              - "true"
+  env:
+    - name: LOONG_MAX_BYTES_PER_SEC
+      value: "209715200"
+    - name: LOONG_SEND_REQUEST_CONCURRENCY
+      value: "15"
+    - name: LOONG_PROCESS_THREAD_COUNT
+      value: "1"
+
+dsAgent:
+  image: 
+    repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector
+    tag: v3.2.6.0-109e584-aliyun
+  cpuLimitsCore: 2
+  memLimitsMB: 2048
+  resources: {}
+  externalUserDefineIDs: ""
+  tolerations:
+    - operator: "Exists"
+  dnsPolicy: "ClusterFirstWithHostNet"
+  dnsConfig: {}
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            k8s-app: logtail-ds
+        topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: type
+            operator: NotIn
+            values:
+            - virtual-kubelet
+          - key: alibabacloud.com/nodepool-type
+            operator: NotIn
+            values:
+            - hybridcloud
+  env:
+    - name: LOONG_MAX_BYTES_PER_SEC
+      value: "209715200"
+    - name: LOONG_SEND_REQUEST_CONCURRENCY
+      value: "15"
+    - name: LOONG_PROCESS_THREAD_COUNT
+      value: "1"
+    - name: ALIYUN_LOG_ENV_TAGS
+      value: "_node_name_|_node_ip_|_cluster_id_"
+    - name: LOONG_USER_CONFIG_FILE_PATH
+      value: /etc/ilogtail/checkpoint/user_log_config.json
+    - name: LOONG_DOCKER_FILE_CACHE_PATH
+      value: /etc/ilogtail/checkpoint/docker_path_config.json
+    - name: LOONG_CHECK_POINT_FILENAME
+      value: /etc/ilogtail/checkpoint/logtail_check_point
+    - name: LOONG_CHECK_POINT_DUMP_INTERVAL
+      value: '60'
+    - name: LOONG_BUFFER_FILE_PATH
+      value: /etc/ilogtail/checkpoint
+
+hybridDsAgent:
+  tolerations:
+    - operator: "Exists"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            k8s-app: logtail-ds
+        topologyKey: "kubernetes.io/hostname"
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: type
+            operator: NotIn
+            values:
+            - virtual-kubelet
+
+singletonAgent:
+  image:
+    repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector
+    tag: v3.2.6.0-109e584-aliyun
+  cpuLimitsCore: 2
+  memLimitsMB: 2048
+  resources: {}
+  service:
+    port: 8899
+    type: ClusterIP
+    protocol: TCP
+  externalUserDefineIDs: ""
+  tolerations: []
+  dnsPolicy: "ClusterFirst"
+  dnsConfig: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - preference:
+            matchExpressions:
+              - key: k8s.aliyun.com
+                operator: NotIn
+                values:
+                  - 'true'
+          weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: alibabacloud.com/nodepool-type
+            operator: NotIn
+            values:
+              - hybridcloud
+          - key: alibabacloud.com/lingjun-worker
+            operator: NotIn
+            values:
+              - "true"
+  env:
+    - name: LOONG_MAX_BYTES_PER_SEC
+      value: "209715200"
+    - name: LOONG_SEND_REQUEST_CONCURRENCY
+      value: "15"
+    - name: LOONG_PROCESS_THREAD_COUNT
+      value: "1"
+  
+  
+operator:
+  serviceAccountName: loongcollector-operator
+  image:
+    repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector-operator
+    pullPolicy: IfNotPresent
+    # operator image
+    tag: 1.0.5.0-c87fb134-aliyun
+  resources: 
+    limits:
+      cpu: 2
+      memory: 2048Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  tolerations: []
+  dnsPolicy: "ClusterFirst"
+  dnsConfig: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - preference:
+            matchExpressions:
+              - key: k8s.aliyun.com
+                operator: NotIn
+                values:
+                  - 'true'
+          weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: alibabacloud.com/nodepool-type
+            operator: NotIn
+            values:
+              - hybridcloud
+          - key: alibabacloud.com/lingjun-worker
+            operator: NotIn
+            values:
+              - "true"
+          
+  env:
+    - name: "GLOBAL_ENABLE_EVENT_RECORDER"
+      value: "true"
+
+      
+  service:
+    type: ClusterIP
+    protocol: TCP
+    port: 8888
+  webhookService:
+    type: ClusterIP
+    protocol: TCP
+    port: 9443
+  pilot:
+    pilotx: false
+    clusterType: '__ACK_CLUSTER_TYPE__'
+    downloadTimeout: "90"
+    # init container resources
+    resources:
+      limits:
+        cpu: 250m
+        memory: 100Mi
+      requests:
+        cpu: 250m
+        memory: 100Mi
+  admissionRegistration:
+    failurePolicy: Ignore
+    onlyLabel: false
+  prometheus:
+    project: ""
+    metricStore: prom_metric
+
+legacy:
+  coreDNSDashboardEnabled: false
+  ingressDashboardEnabled: false
+  slsMonitoring: false
+  statefulset:
+    replicas: 1
+    image:
+      repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector
+      tag: v3.2.6.0-109e584-aliyun
+    cpuLimitsCore: 2
+    memLimitsMB: 2048
+    externalUserDefineIDs: ""
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+                - key: k8s.aliyun.com
+                  operator: NotIn
+                  values:
+                    - 'true'
+            weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: alibabacloud.com/nodepool-type
+            operator: NotIn
+            values:
+              - hybridcloud
+          - key: alibabacloud.com/lingjun-worker
+            operator: NotIn
+            values:
+              - "true"
+    env:
+      - name: LOONG_MAX_BYTES_PER_SEC
+        value: "209715200"
+      - name: LOONG_SEND_REQUEST_CONCURRENCY
+        value: "15"
+      - name: LOONG_PROCESS_THREAD_COUNT
+        value: "1"
+
+  depsLib:
+    image:
+      repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector-deps-lib
+      tag: v1.6.0-libs-aliyun
+  slsKubeStateMetrics:
+    image:
+      repository: aliyun-observability-release-registry.__ACK_REGION_ID__.cr.aliyuncs.com/loongcollector/loongcollector-deps-lib
+      tag: v1.9.8-kube-state-metrics
+
+clusterType: __ACK_CLUSTER_TYPE__
+clusterProfile: __ACK_CLUSTER_PROFILE__
+
+default:
+  projectName: ""
+  aliUid: ""
+  region: ""
+
+
+customConfig: ""

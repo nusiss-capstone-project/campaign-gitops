@@ -1,0 +1,136 @@
+{{- if .Values.enablePrometheus }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: loongcollector-cluster
+  name: loongcollector-cluster
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      k8s-app: loongcollector-cluster
+  template:
+    metadata:
+      labels:
+        k8s-app: loongcollector-cluster
+    spec:
+      serviceAccountName: {{ .Values.clusterAgent.serviceAccountName }}
+      affinity:
+        {{- toYaml .Values.clusterAgent.affinity | nindent 8 }}
+      {{- if .Values.clusterAgent.tolerations }}
+      tolerations:
+        {{- toYaml .Values.clusterAgent.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.clusterAgent.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.clusterAgent.dnsConfig | nindent 8 }}
+      {{- end }}
+      dnsPolicy: {{ .Values.clusterAgent.dnsPolicy }}
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      {{- if eq .Values.clusterProfile "Edge" }}
+        alibabacloud.com/is-edge-worker: "false"
+      {{- end }}
+      containers:
+        - env:
+          - name: _pod_name_
+            valueFrom:
+              fieldRef:
+                fieldPath:  metadata.name
+          - name: ALIYUN_LOGTAIL_USER_ID
+            value: "{{ include "loongcollector.uid" . }}"
+          - name: "ALICLOUD_LOG_DOCKER_ENV_CONFIG"
+            value: "false"
+          - name: "ALICLOUD_LOG_PLUGIN_ENV_CONFIG"
+            value: "false"
+          - name: "ALICLOUD_LOG_DEFAULT_MACHINE_GROUP"
+            value: "{{ include "loongcollector.baseMachineGroup" . }}-cluster"
+          - name: ALIYUN_LOGTAIL_USER_DEFINED_ID
+            value: "$(ALICLOUD_LOG_DEFAULT_MACHINE_GROUP),{{ .Values.clusterAgent.externalUserDefineIDs }}"
+          - name: "ALIYUN_LOGTAIL_CONFIG"
+            value: "/usr/local/ilogtail/ilogtail_config.json"
+          - name: "ALIYUN_LOGTAIL_ENABLE_HOST_IP_REPLACE"
+            value: "false"
+          - name: HTTP_PROBE_PORT
+            value: "7953"
+          - name: ALIYUN_LOG_ENV_TAGS
+            value: "_cluster_id_"
+          - name: _cluster_id_
+            value: "{{ .Values.clusterID }}"
+          - name: LOONG_OPERATOR_SERVICE
+            value: "{{ include "loongcollector-operator.fullname" . }}"
+          - name: LOONG_OPERATOR_SERVICE_PORT
+            value: "{{ .Values.operator.service.port }}"
+          - name: "LOONG_CPU_USAGE_LIMIT"
+            value: "{{.Values.clusterAgent.cpuLimitsCore}}"
+          - name: "LOONG_MEM_USAGE_LIMIT"
+            value: "{{.Values.clusterAgent.memLimitsMB}}"            
+          {{- range .Values.clusterAgent.env }}
+          - name: {{ .name }}
+            {{- if .value }}
+            value: {{ .value | quote }}
+            {{- end }}
+            {{- if .valueFrom }}
+            valueFrom:
+              {{- toYaml .valueFrom | nindent 14 }}
+            {{- end }}
+          {{- end }}
+          image: {{ include "replaceRegionId"  (list . .Values.clusterAgent.image.repository) }}:{{ .Values.clusterAgent.image.tag }}
+          imagePullPolicy: IfNotPresent
+          name: loongcollector
+          ports:
+            - containerPort: 9335
+              name: metrics
+              protocol: TCP
+            - containerPort: 18689
+              name: to-operator
+              protocol: TCP
+          {{- if .Values.clusterAgent.resources }}
+          resources:
+            {{- toYaml .Values.clusterAgent.resources | nindent 12 }}
+          {{- else}}
+          resources:
+            limits:
+              cpu: "{{.Values.clusterAgent.cpuLimitsCore}}"
+              memory: "{{.Values.clusterAgent.memLimitsMB}}Mi"
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            procMount: Default
+            seccompProfile:
+              type: RuntimeDefault 
+          livenessProbe:
+            exec:
+              command:
+                - /etc/init.d/loongcollectord
+                - status
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - /etc/init.d/loongcollectord
+                - status
+            failureThreshold: 3
+            initialDelaySeconds: 35
+            periodSeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 10
+          volumeMounts:
+            - mountPath: /usr/local/ilogtail/ilogtail_config.json
+              name: loongcollector-config
+              subPath: ilogtail_config.json
+      volumes:
+      - name: loongcollector-config
+        configMap:
+          defaultMode: 420
+          name: loongcollector-config
+
+{{- end }}

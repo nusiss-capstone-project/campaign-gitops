@@ -1,0 +1,258 @@
+{{- if and (ne .Values.clusterProfile "Serverless") .Values.enableHybrid }}
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: loongcollector-ds-hybrid
+  namespace: {{ .Release.Namespace }}
+  labels:
+    k8s-app: loongcollector-ds-hybrid
+spec:
+  selector:
+    matchLabels:
+      k8s-app: loongcollector-ds-hybrid
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 30%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: loongcollector-ds-hybrid
+        kubernetes.io/cluster-service: "true"
+    spec:
+      serviceAccountName: loongcollector-ds-hybrid
+      affinity:
+        {{- toYaml .Values.hybridDsAgent.affinity | nindent 8 }}
+      {{- if .Values.hybridDsAgent.tolerations }}
+      tolerations:
+        {{- toYaml .Values.hybridDsAgent.tolerations | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+        alibabacloud.com/nodepool-type: hybridcloud
+      {{ if .Values.legacy.slsMonitoring }}            
+      initContainers:
+        - name: deps
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "cp -r /etc/ilogtail/agent-install/* /share"]
+          volumeMounts:
+            - mountPath: /share
+              name: dependencies
+          image: {{ include "replaceRegionId"  (list . .Values.legacy.depsLib.image.repository) }}:{{ .Values.legacy.depsLib.image.tag }}
+      {{ end }}
+      containers:
+      - name: loongcollector
+        imagePullPolicy: IfNotPresent
+        image: {{ include "replaceRegionId"  (list . .Values.dsAgent.image.repository) }}:{{ .Values.dsAgent.image.tag }}         
+        {{- if .Values.dsAgent.resources }}
+        resources:
+          {{- toYaml .Values.dsAgent.resources | nindent 10 }}
+        {{- else}}
+        resources:
+          limits:
+            cpu: "{{.Values.dsAgent.cpuLimitsCore}}"
+            memory: "{{.Values.dsAgent.memLimitsMB}}Mi"
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 7953
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /liveness
+            port: 7953
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 1
+
+        securityContext:
+          {{- if .Values.enableEBPF }}
+          capabilities:
+            add:
+              - SYS_PTRACE
+              - SYS_ADMIN
+              - IPC_LOCK
+              - DAC_OVERRIDE
+              - SYS_MODULE
+              - SYS_RESOURCE
+              - NET_ADMIN
+              - NET_RAW
+          {{- end }}
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          privileged: false
+          procMount: Default
+        env:
+          - name: LOONG_REGION
+            value: {{ include "loongcollector.region" . }}
+          - name: HTTP_PROBE_PORT
+            value: "7953"
+          - name: "ALIYUN_LOGTAIL_USER_ID"
+            value: "{{ include "loongcollector.uid" . }}"
+          - name: "ALICLOUD_LOG_ECS_FLAG"
+            value: "{{ include "isNodeECS" . }}"
+          - name: "ALICLOUD_LOG_K8S_FLAG"
+            value: "{{ include "isACK" . }}"
+          - name: "ALICLOUD_LOG_DEFAULT_PROJECT"
+            value: "{{ include "loongcollector.project" . }}"
+          - name: "ALICLOUD_LOG_ENDPOINT"
+            value: "{{ include "loongcollector.endpoint" . }}"
+          - name: "ALICLOUD_LOG_DEFAULT_MACHINE_GROUP"
+            value: "{{ include "loongcollector.baseMachineGroup" . }}"
+          - name: "ALIYUN_LOGTAIL_USER_DEFINED_ID"
+            value: "$(ALICLOUD_LOG_DEFAULT_MACHINE_GROUP),{{ .Values.dsAgent.externalUserDefineIDs }}"
+          - name: "ALIYUN_LOGTAIL_CONFIG"
+            value: "/usr/local/ilogtail/ilogtail_config.json"
+          - name: "_node_name_"
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: "_node_ip_"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          {{- if eq .Values.clusterType "ExternalKubernetes" }}
+          - name: "ALICLOUD_LOG_ACCESS_KEY_ID"
+            valueFrom:
+              secretKeyRef:
+                name: alibaba-addon-secret
+                key: access-key-id
+          - name: "ALICLOUD_LOG_ACCESS_KEY_SECRET"
+            valueFrom:
+              secretKeyRef:
+                name: alibaba-addon-secret
+                key: access-key-secret
+          {{- else if eq (include "isACK" . | trim) "false"}}
+          - name: "ALICLOUD_LOG_ACCESS_KEY_ID"
+            value: "{{ .Values.accessKeyID }}"
+          - name: "ALICLOUD_LOG_ACCESS_KEY_SECRET"
+            value: "{{ .Values.accessKeySecret }}"
+          {{- end }}
+          - name: _cluster_id_
+            value: "{{ .Values.clusterID }}"
+          # resource limit for logtail self process
+          - name: "LOONG_CPU_USAGE_LIMIT"
+            value: "{{.Values.dsAgent.cpuLimitsCore}}"
+          - name: "LOONG_MEM_USAGE_LIMIT"
+            value: "{{.Values.dsAgent.memLimitsMB}}"
+          - name: "ALICLOUD_LOG_DOCKER_ENV_CONFIG"
+          {{- if eq .Values.clusterProfile "Edge" }}
+            value: "false"
+          {{- else }}
+            value: "true"
+          {{- end }}
+          {{- range .Values.dsAgent.env }}
+          - name: {{ .name }}
+            {{- if .value }}
+            value: {{ .value | quote }}
+            {{- end }}
+            {{- if .valueFrom }}
+            valueFrom:
+              {{- toYaml .valueFrom | nindent 14 }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.enableEBPF }}
+          - name: LOONG_ENABLE_EBPF
+            value: "true"
+          {{- end }}
+          {{- if .Values.legacy.slsMonitoring }}     
+          - name: ALIYUN_LOGTAIL_OBSERVER
+            value: "true"
+          - name: HOST_PROC
+            value: /logtail_host/proc
+          - name: HOST_SYS
+            value: /logtail_host/sys
+          - name: HOST_ETC
+            value: /logtail_host/etc
+          - name: HOST_VAR
+            value: /logtail_host/var
+          - name: HOST_RUN
+            value: /logtail_host/run
+          - name: HOST_DEV
+            value: /logtail_host/dev
+          {{- end }}
+        volumeMounts:
+        - name: run
+          mountPath: /var/run/
+        - name: root
+          mountPath: /logtail_host
+          readOnly: true
+          mountPropagation: HostToContainer
+        - mountPath:  /etc/ilogtail/checkpoint
+          name: checkpoint
+        - mountPath: /etc/ilogtail/config
+          name: pipelineconfig
+        - mountPath: /etc/ilogtail/instance_config
+          name: instanceconfig
+        - mountPath: /usr/local/ilogtail/ilogtail_config.json
+          name: loongcollector-config
+          subPath: ilogtail_config.json
+        - mountPath: /run/nscd
+          name: empty
+        {{- if .Values.enableEBPF }}
+        - mountPath: /logtail_host/sys
+          name: root-sys
+        - mountPath: /sys
+          name: root-sys
+        {{- end }}
+        {{- if .Values.legacy.slsMonitoring }}     
+        - mountPath: /etc/ilogtail/agent-install
+          name: dependencies
+        {{- end }}
+      terminationGracePeriodSeconds: 30
+      {{- if .Values.enableEBPF }}
+      hostNetwork: true
+      {{- end }}
+      {{- if .Values.dsAgent.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.dsAgent.dnsConfig | nindent 8 }}
+      {{- end }}
+      dnsPolicy: {{ .Values.dsAgent.dnsPolicy }}
+      priorityClassName: system-cluster-critical
+      volumes:
+      - name: run
+        hostPath:
+          path: /var/run/
+      - name: root
+        hostPath:
+          path: /
+      - name: pipelineconfig
+        hostPath:
+          path: /var/lib/{{ .Release.Namespace }}-logtail-ds/config
+          type: DirectoryOrCreate
+      - name: instanceconfig
+        hostPath:
+          path: /var/lib/{{ .Release.Namespace }}-logtail-ds/instance_config
+          type: DirectoryOrCreate
+      - name: checkpoint
+        hostPath:
+          path: /var/lib/{{ .Release.Namespace }}-logtail-ds/checkpoint
+          type: DirectoryOrCreate
+      - name: loongcollector-config
+        configMap:
+          defaultMode: 420
+          name: loongcollector-config
+      - name: empty
+        emptyDir: {}
+      {{- if .Values.enableEBPF }}
+      - name: root-sys
+        hostPath:
+          path: /sys
+      {{- end }}
+      {{- if .Values.legacy.slsMonitoring }}     
+      - name: dependencies
+        emptyDir: {}
+      {{- end }}
+
+{{- end }}
