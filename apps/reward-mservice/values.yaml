@@ -53,6 +53,9 @@ configFile:
         - reward.issue_request.approved
         - reward.distribution.execute
         - reward.distribution.result
+    asset_grpc:
+      host: asset-mservice.campaign-dev.svc.cluster.local
+      port: 5001
 
 externalSecret:
   enabled: true
