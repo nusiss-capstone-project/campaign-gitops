@@ -15,6 +15,10 @@ existingSecret: ""
 existingSecretKeys:
   accessKeyID: access-key-id
   accessKeySecret: access-key-secret
+# k3s / containerd: override CRI socket (default Docker path will miss containers).
+containerRuntime:
+  useContainerd: false
+  sockPath: /var/run/containerd/containerd.sock
 # 自定义集群ID，命名只支持大小写，数字，短划线(-)。
 clusterID: ""
 

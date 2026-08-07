@@ -184,6 +184,12 @@ spec:
               {{- toYaml .valueFrom | nindent 14 }}
             {{- end }}
           {{- end }}
+          {{- if .Values.containerRuntime.useContainerd }}
+          - name: USE_CONTAINERD
+            value: "true"
+          - name: CONTAINERD_SOCK_PATH
+            value: {{ .Values.containerRuntime.sockPath | quote }}
+          {{- end }}
           {{- if .Values.enableEBPF }}
           - name: LOONG_ENABLE_EBPF
             value: "true"

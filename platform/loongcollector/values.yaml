@@ -29,6 +29,12 @@ enableHybrid: false
 legacy:
   slsMonitoring: false
 
+# k3s uses a non-default containerd socket; without this, stdout discovery finds 0 containers.
+containerRuntime:
+  useContainerd: true
+  # Mounted into the agent via hostPath /var/run → /var/run
+  sockPath: /var/run/k3s/containerd/containerd.sock
+
 # Keep agent light on small k3s nodes (defaults are 2 CPU / 2Gi).
 dsAgent:
   cpuLimitsCore: 0.5
