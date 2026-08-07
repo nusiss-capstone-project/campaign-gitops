@@ -1,8 +1,11 @@
-# Collect container stdout/stderr from campaign-dev only → one SLS Logstore.
+# Collect container stdout/stderr → one SLS Logstore.
 #
-# Prerequisite (self-managed k3s): create a user-defined machine group in SLS
-# Project with identifier exactly: k8s-group-campaign-k3s-dev
-# Heartbeat must be OK before logs appear.
+# Temporary: no Namespace filter (diagnose empty Logstore).
+# After data appears, restore:
+#   ContainerFilters:
+#     K8sNamespaceRegex: ^campaign-dev$
+#
+# Prerequisite: SLS user-defined machine group k8s-group-campaign-k3s-dev heartbeat OK.
 apiVersion: telemetry.alibabacloud.com/v1alpha1
 kind: ClusterAliyunPipelineConfig
 metadata:
@@ -24,8 +27,6 @@ spec:
       - Type: input_container_stdio
         IgnoringStderr: false
         IgnoringStdout: false
-        ContainerFilters:
-          K8sNamespaceRegex: ^campaign-dev$
     processors: []
     flushers:
       - Type: flusher_sls

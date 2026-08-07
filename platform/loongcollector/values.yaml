@@ -16,9 +16,10 @@ existingSecretKeys:
   accessKeyID: access-key-id
   accessKeySecret: access-key-secret
 
-# Self-managed k3s (not ACK)
-clusterType: ""
-clusterProfile: ""
+# Self-managed k3s: use ExternalKubernetes so ALICLOUD_LOG_K8S_FLAG=true
+# (needed for K8s namespace/pod metadata filters). AK still comes from existingSecret.
+clusterType: ExternalKubernetes
+clusterProfile: Default
 
 enablePrometheus: false
 enablePilot: false
