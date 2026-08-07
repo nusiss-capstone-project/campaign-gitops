@@ -29,7 +29,7 @@ spec:
         {{- toYaml .Values.dsAgent.tolerations | nindent 8 }}
       {{- end }}
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       {{ if .Values.legacy.slsMonitoring }}            
       initContainers:
         - name: deps

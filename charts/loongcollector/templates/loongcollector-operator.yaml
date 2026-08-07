@@ -27,7 +27,7 @@ spec:
       {{- end }}
       dnsPolicy: {{ .Values.operator.dnsPolicy }}
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       {{- if eq .Values.clusterProfile "Edge" }}
         alibabacloud.com/is-edge-worker: "false"
       {{- end }}
