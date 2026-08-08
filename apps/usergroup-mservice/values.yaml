@@ -50,7 +50,7 @@ externalSecret:
   targetSecretName: usergroup-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/usergroup-mservice
+    key: campaign-center/demo/usergroup-mservice
 
 envFromSecret:
   enabled: true

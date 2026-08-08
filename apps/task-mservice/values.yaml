@@ -46,8 +46,8 @@ configFile:
       brokers:
         # In-cluster Kafka: <service>.<namespace>.svc.cluster.local:<port>
         - kafka.messaging.svc.cluster.local:9092
-      group_id: task-mservice
-      client_id: task-mservice
+      group_id: demo-task-mservice
+      client_id: demo-task-mservice
       topics:
         - user.events.kyc_complete
         - payment.payment_method.added
@@ -62,7 +62,7 @@ externalSecret:
   targetSecretName: task-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/task-mservice
+    key: campaign-center/demo/task-mservice
 
 envFromSecret:
   enabled: true

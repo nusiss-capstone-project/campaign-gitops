@@ -1,20 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: task-mservice
+  name: demo-task-mservice
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
-    targetRevision: dev
+    targetRevision: demo
     path: charts/go-service
     helm:
       valueFiles:
         - ../../apps/task-mservice/values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: campaign-dev
+    namespace: campaign-demo
   syncPolicy:
     automated:
       prune: true

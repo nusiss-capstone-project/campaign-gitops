@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: loongcollector-config
+  name: demo-loongcollector-pipeline
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -9,11 +9,10 @@ spec:
   project: default
   source:
     repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
-    targetRevision: dev
-    path: platform/loongcollector
+    targetRevision: demo
+    path: platform/loongcollector/pipelines
     directory:
-      recurse: true
-      exclude: "{values.yaml,README.md}"
+      include: "campaign-demo-stdout.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -23,24 +22,8 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      # Required for ignoreDifferences to clear OutOfSync with auto-sync.
       - RespectIgnoreDifferences=true
   ignoreDifferences:
-    - group: external-secrets.io
-      kind: ExternalSecret
-      jsonPointers:
-        - /status
-        - /metadata/annotations
-        - /metadata/managedFields
-    - group: ""
-      kind: Secret
-      name: loongcollector-sls-credentials
-      jsonPointers:
-        - /data
-        - /metadata/annotations
-        - /metadata/labels
-        - /metadata/managedFields
-        - /metadata/ownerReferences
     - group: telemetry.alibabacloud.com
       kind: ClusterAliyunPipelineConfig
       jsonPointers:

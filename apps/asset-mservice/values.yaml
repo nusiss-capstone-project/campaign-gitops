@@ -42,17 +42,17 @@ configFile:
         - https://finverse-web.vercel.app
         - http://localhost:3000
     payment_grpc:
-      host: payment-mservice.campaign-dev.svc.cluster.local
+      host: payment-mservice
       port: 5001
     identity:
-      host: identity-mservice.campaign-dev.svc.cluster.local
+      host: identity-mservice
       port: 5001
     kafka:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      group_id: asset-mservice
-      client_id: asset-mservice
+      group_id: demo-asset-mservice
+      client_id: demo-asset-mservice
       topics:
         - payment.transaction.updated
 
@@ -64,7 +64,7 @@ externalSecret:
   targetSecretName: asset-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/asset-mservice
+    key: campaign-center/demo/asset-mservice
 
 envFromSecret:
   enabled: true

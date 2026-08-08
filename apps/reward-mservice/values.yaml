@@ -46,14 +46,14 @@ configFile:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      group_id: reward-mservice
-      client_id: reward-mservice
+      group_id: demo-reward-mservice
+      client_id: demo-reward-mservice
       topics:
         - reward.finance_doc.approved
         - reward.issue_request.approved
         - reward.distribution.execute
     asset_grpc:
-      host: asset-mservice.campaign-dev.svc.cluster.local
+      host: asset-mservice
       port: 5001
 
 externalSecret:
@@ -64,7 +64,7 @@ externalSecret:
   targetSecretName: reward-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/reward-mservice
+    key: campaign-center/demo/reward-mservice
 
 envFromSecret:
   enabled: true

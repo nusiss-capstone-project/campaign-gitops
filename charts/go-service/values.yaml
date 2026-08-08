@@ -78,8 +78,12 @@ envFromSecret:
   enabled: false
   secretName: ""
 
-# Extra container env vars (list). Merged after otel defaults when both set.
+# Extra container env vars (list). Merged after otel / kafkaTopicPrefix when both set.
 extraEnv: []
+
+# When set, injects KAFKA_TOPIC_PREFIX (services should prepend to configured topic names).
+# Empty string = omit the env var (no prefix).
+kafkaTopicPrefix: "demo."
 
 # OTLP → Grafana Cloud Alloy (in-cluster receiver; Alloy ships to Grafana Cloud).
 # Go services require ENDPOINT + HEADERS + PROTOCOL=http/protobuf; empty HEADERS disables export.
@@ -89,13 +93,13 @@ otel:
   endpoint: http://grafana-cloud-alloy.monitoring.svc.cluster.local:4318
   protocol: http/protobuf
   # Non-secret placeholder for in-cluster Alloy (app requires non-empty HEADERS).
-  headers: x-campaign-otel=dev
+  headers: x-campaign-otel=demo
   # When true, also set OTEL_SERVICE_NAME from serviceName.
   setServiceName: true
   # Log field `env` (defaults to "local" if unset).
-  appEnv: dev
+  appEnv: demo
   # Comma-separated resource attributes (optional).
-  resourceAttributes: deployment.environment=dev,service.namespace=campaign-dev
+  resourceAttributes: deployment.environment=demo,service.namespace=campaign-demo
   # Trace sampler ratio argument for parentbased_traceidratio (optional; empty = omit).
   tracesSampler: parentbased_traceidratio
   tracesSamplerArg: "1.0"

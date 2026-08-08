@@ -53,22 +53,22 @@ configFile:
       endpoint: oss-ap-southeast-1.aliyuncs.com
       bucket: campaign-center-img
       public_base_url: "https://cdn.campaignhub.best"
-      key_prefix: campaign-center
+      key_prefix: campaign-center-demo
     usergroup_grpc:
-      host: usergroup-mservice.campaign-dev.svc.cluster.local
+      host: usergroup-mservice
       port: 5001
     task_grpc:
-      host: task-mservice.campaign-dev.svc.cluster.local
+      host: task-mservice
       port: 5001
     reward_grpc:
-      host: reward-mservice.campaign-dev.svc.cluster.local
+      host: reward-mservice
       port: 5001
     kafka:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      group_id: campaign-center-api
-      client_id: campaign-center-api
+      group_id: demo-campaign-center-api
+      client_id: demo-campaign-center-api
       topics:
         - task.events.completed
         - reward.distribution.result
@@ -81,7 +81,7 @@ externalSecret:
   targetSecretName: campaign-center-api-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/campaign-center-api
+    key: campaign-center/demo/campaign-center-api
 
 envFromSecret:
   enabled: true

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: usergroup-job
-  namespace: campaign-dev
+  namespace: campaign-demo
   labels:
     app.kubernetes.io/name: usergroup-job
     app.kubernetes.io/part-of: campaign-center
@@ -12,7 +12,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: usergroup-job-config
-  namespace: campaign-dev
+  namespace: campaign-demo
   labels:
     app.kubernetes.io/name: usergroup-job
     app.kubernetes.io/part-of: campaign-center
@@ -29,7 +29,7 @@ apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: usergroup-job-external-secret
-  namespace: campaign-dev
+  namespace: campaign-demo
   labels:
     app.kubernetes.io/name: usergroup-job
     app.kubernetes.io/part-of: campaign-center
@@ -44,13 +44,13 @@ spec:
     creationPolicy: Owner
   dataFrom:
     - extract:
-        key: campaign-center/dev/usergroup-job
+        key: campaign-center/demo/usergroup-job
 ---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: usergroup-job
-  namespace: campaign-dev
+  namespace: campaign-demo
   labels:
     app.kubernetes.io/name: usergroup-job
     app.kubernetes.io/part-of: campaign-center

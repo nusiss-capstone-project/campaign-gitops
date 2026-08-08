@@ -54,7 +54,7 @@ configFile:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      client_id: identity-mservice
+      client_id: demo-identity-mservice
 
 externalSecret:
   enabled: true
@@ -64,7 +64,7 @@ externalSecret:
   targetSecretName: identity-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/dev/identity-mservice
+    key: campaign-center/demo/identity-mservice
 
 envFromSecret:
   enabled: true

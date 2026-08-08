@@ -69,7 +69,7 @@ spec:
             - secretRef:
                 name: {{ .Values.envFromSecret.secretName }}
           {{- end }}
-          {{- if or .Values.otel.enabled .Values.extraEnv }}
+          {{- if or .Values.otel.enabled .Values.extraEnv .Values.kafkaTopicPrefix }}
           env:
             {{- if .Values.otel.enabled }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -98,6 +98,10 @@ spec:
             - name: OTEL_TRACES_SAMPLER_ARG
               value: {{ .Values.otel.tracesSamplerArg | quote }}
             {{- end }}
+            {{- end }}
+            {{- if .Values.kafkaTopicPrefix }}
+            - name: KAFKA_TOPIC_PREFIX
+              value: {{ .Values.kafkaTopicPrefix | quote }}
             {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
