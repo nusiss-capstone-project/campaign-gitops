@@ -4,7 +4,6 @@ metadata:
   name: otel-collector
   namespace: argocd
   annotations:
-    # After kube-prometheus-stack (Prometheus Operator CRDs / ServiceMonitor).
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
@@ -16,11 +15,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-  # ServiceMonitor CRD comes from kube-prometheus-stack; sync after that app is healthy.
-  ignoreDifferences: []

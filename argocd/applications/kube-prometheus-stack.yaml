@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: kube-prometheus-stack
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
@@ -21,10 +19,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
+  # Manual sync only — automated sync previously starved the k3s master.
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
