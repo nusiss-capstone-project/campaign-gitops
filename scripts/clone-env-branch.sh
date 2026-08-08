@@ -170,6 +170,11 @@ while IFS= read -r f; do
     "$f"
 done <"$TMP_LIST"
 
+# Non-dev clones never inject Linkerd (save resources; K8s DNS connectivity unchanged).
+if [[ -f charts/go-service/values.yaml ]]; then
+  sedi -e 's|linkerd\.io/inject: enabled|linkerd.io/inject: disabled|g' charts/go-service/values.yaml
+fi
+
 git add -A
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "Clone env ${SRC_ENV} → ${NEW_ENV} via scripts/clone-env-branch.sh"

@@ -110,8 +110,9 @@ service:
     http: 8080
     grpc: 5001
 
+# Non-dev envs skip mesh sidecars to save CPU/memory; plain ClusterIP still works.
 podAnnotations:
-  linkerd.io/inject: enabled
+  linkerd.io/inject: disabled
 podLabels: {}
 
 nodeSelector: {}
