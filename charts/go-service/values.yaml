@@ -78,6 +78,20 @@ envFromSecret:
   enabled: false
   secretName: ""
 
+# Extra container env vars (list). Merged after otel defaults when both set.
+extraEnv: []
+
+# In-cluster OTLP defaults for demo monitoring (override per-service values as needed).
+# Go services require ENDPOINT + HEADERS + PROTOCOL; empty HEADERS disables export.
+otel:
+  enabled: true
+  endpoint: http://otel-collector.monitoring.svc.cluster.local:4318
+  protocol: http/protobuf
+  # Non-secret demo placeholder (app requires non-empty HEADERS).
+  headers: x-campaign-otel=dev
+  # When true, also set OTEL_SERVICE_NAME from serviceName.
+  setServiceName: true
+
 service:
   type: ClusterIP
   ports:

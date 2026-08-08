@@ -69,6 +69,24 @@ spec:
             - secretRef:
                 name: {{ .Values.envFromSecret.secretName }}
           {{- end }}
+          {{- if or .Values.otel.enabled .Values.extraEnv }}
+          env:
+            {{- if .Values.otel.enabled }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.otel.protocol | quote }}
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: {{ .Values.otel.headers | quote }}
+            {{- if and .Values.otel.setServiceName .Values.serviceName }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.serviceName | quote }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.configFile.enabled }}

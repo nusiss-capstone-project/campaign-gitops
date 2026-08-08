@@ -23,9 +23,12 @@ campaign-center-gitops/
 ├── charts/go-service/          # Reusable Helm chart for all Go microservices
 ├── apps/<service-name>/        # Per-service deployment values (one file per branch)
 │   └── values.yaml
-├── traefik/                    # Shared Traefik IngressRoute (kube-system)
+├── platform/                   # Platform add-ons (LoongCollector, monitoring, OTel)
+├── traefik/                    # Shared Traefik IngressRoute
 └── argocd/applications/        # ArgoCD Application manifests
 ```
+
+Demo monitoring (Prometheus / Grafana / OTel) lives under `platform/` — see [`platform/monitoring/README.md`](platform/monitoring/README.md).
 
 ## Branch-based environments
 

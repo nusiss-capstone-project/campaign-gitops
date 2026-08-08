@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-routes
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
+    targetRevision: dev
+    path: platform/monitoring
+    directory:
+      include: "*.yaml"
+      exclude: "README.md"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
