@@ -11,6 +11,8 @@ spec:
   entryPoints:
     - web
     - websecure
+  tls:
+    secretName: campaignhub-origin-tls
   routes:
     - match: Host(`campaignhub.best`) && PathPrefix(`/task-ms`)
       kind: Rule

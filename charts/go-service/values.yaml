@@ -106,7 +106,8 @@ service:
     http: 8080
     grpc: 5001
 
-podAnnotations: {}
+podAnnotations:
+  linkerd.io/inject: enabled
 podLabels: {}
 
 nodeSelector: {}
