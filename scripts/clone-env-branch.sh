@@ -171,6 +171,9 @@ while IFS= read -r f; do
 done <"$TMP_LIST"
 
 git add -A
+if [[ -n "$(git status --porcelain)" ]]; then
+  git commit -m "Clone env ${SRC_ENV} → ${NEW_ENV} via scripts/clone-env-branch.sh"
+fi
 
 cat <<EOF
 
@@ -186,17 +189,11 @@ Next (outside GitOps):
   2. kubectl: copy acr-secret + campaignhub-origin-tls into campaign-${NEW_ENV}
   3. Vault: campaign-center/${NEW_ENV}/* (+ DBs)
   4. IaC: ArgoCD AppRoot watching branch ${NEW_ENV}
-  5. Review + commit if needed, then: git push -u origin ${NEW_ENV}
+  5. git push -u origin ${NEW_ENV}
 
 EOF
 
-git status --short
-
 if [[ "$DO_PUSH" -eq 1 ]]; then
-  # Commit auto only when pushing and there are staged/uncommitted rewrite changes
-  if [[ -n "$(git status --porcelain)" ]]; then
-    git commit -m "Clone env ${SRC_ENV} → ${NEW_ENV} via scripts/clone-env-branch.sh"
-  fi
   git push -u origin "$NEW_ENV"
   echo "pushed origin/${NEW_ENV}"
 fi
