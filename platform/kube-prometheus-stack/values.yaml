@@ -77,6 +77,13 @@ grafana:
     port: 80
 
 prometheusOperator:
+  # Admission webhook Jobs are ArgoCD PreSync/PostSync hooks; on small k3s they
+  # often hang ("waiting for admission-create"). Disable for demo — not needed
+  # to scrape OTel ServiceMonitors.
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
   resources:
     requests:
       cpu: 25m
