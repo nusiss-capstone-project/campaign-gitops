@@ -23,12 +23,12 @@ campaign-center-gitops/
 ├── charts/go-service/          # Reusable Helm chart for all Go microservices
 ├── apps/<service-name>/        # Per-service deployment values (one file per branch)
 │   └── values.yaml
-├── platform/                   # Platform add-ons (LoongCollector, monitoring, OTel)
+├── platform/                   # Platform add-ons (LoongCollector, OTel Collector)
 ├── traefik/                    # Shared Traefik IngressRoute
 └── argocd/applications/        # ArgoCD Application manifests
 ```
 
-Demo monitoring (Prometheus / Grafana / OTel) lives under `platform/` — see [`platform/monitoring/README.md`](platform/monitoring/README.md).
+Prometheus / Grafana are installed from the IaC repo (Ansible), not via ArgoCD. Microservice OTLP defaults live in `charts/go-service`; the in-cluster OTel Collector is under `platform/otel-collector`.
 
 ## Branch-based environments
 

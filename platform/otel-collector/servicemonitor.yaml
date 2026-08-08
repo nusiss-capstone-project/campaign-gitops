@@ -1,11 +1,10 @@
 # Scrapes OTel Collector spanmetrics Prometheus exporter.
-# Confirmed from this repo's manifests (not guessed from an external cluster):
+# Prometheus Operator is installed from the IaC repo (Ansible), not ArgoCD.
 #   namespace: monitoring
 #   service: otel-collector
 #   port name: metrics (8889)
-#   path: /metrics (prometheus exporter default)
-#   selector labels: app.kubernetes.io/name=otel-collector
-#   release label: kube-prometheus-stack (matches kube-prometheus-stack helm release)
+#   path: /metrics
+#   release label: must match the Ansible helm release serviceMonitorSelector
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

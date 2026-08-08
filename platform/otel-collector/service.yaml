@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: otel-collector
     app.kubernetes.io/part-of: campaign-center
     app.kubernetes.io/component: otel-collector
-    # Selected by kube-prometheus-stack (serviceMonitorSelectorNilUsesHelmValues)
+    # Must match Prometheus Operator serviceMonitorSelector from IaC Ansible install
     release: kube-prometheus-stack
 spec:
   type: ClusterIP

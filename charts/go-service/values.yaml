@@ -81,8 +81,9 @@ envFromSecret:
 # Extra container env vars (list). Merged after otel defaults when both set.
 extraEnv: []
 
-# In-cluster OTLP defaults for demo monitoring (override per-service values as needed).
+# In-cluster OTLP defaults (override per-service values as needed).
 # Go services require ENDPOINT + HEADERS + PROTOCOL; empty HEADERS disables export.
+# Collector is deployed via ArgoCD; Prometheus scrapes it from the IaC-installed stack.
 otel:
   enabled: true
   endpoint: http://otel-collector.monitoring.svc.cluster.local:4318
