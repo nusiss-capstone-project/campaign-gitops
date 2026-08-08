@@ -87,11 +87,12 @@ if git show-ref --verify --quiet "refs/heads/$NEW_ENV" || git show-ref --verify 
   git branch -D "$NEW_ENV" >/dev/null 2>&1 || true
 fi
 
-SRC_REF="$FROM_BRANCH"
-if git show-ref --verify --quiet "refs/remotes/origin/$FROM_BRANCH"; then
-  SRC_REF="origin/$FROM_BRANCH"
-elif git show-ref --verify --quiet "refs/heads/$FROM_BRANCH"; then
+# Prefer local source branch (may be ahead of origin, e.g. just added this script).
+SRC_REF=""
+if git show-ref --verify --quiet "refs/heads/$FROM_BRANCH"; then
   SRC_REF="$FROM_BRANCH"
+elif git show-ref --verify --quiet "refs/remotes/origin/$FROM_BRANCH"; then
+  SRC_REF="origin/$FROM_BRANCH"
 else
   echo "source branch not found: $FROM_BRANCH" >&2
   exit 1
@@ -128,9 +129,10 @@ rename_if_exists \
   "argocd/applications/loongcollector-${NEW_ENV}-pipeline.yaml"
 
 # Doc: DEMO.md or <src>.md → <new>.md
-if [[ -f "${SRC_ENV}.md" ]]; then
+# On case-insensitive FS, [[ -f demo.md ]] matches DEMO.md — use git ls-files.
+if git ls-files --error-unmatch "${SRC_ENV}.md" >/dev/null 2>&1; then
   git mv "${SRC_ENV}.md" "${NEW_ENV}.md"
-elif [[ -f DEMO.md ]]; then
+elif git ls-files --error-unmatch DEMO.md >/dev/null 2>&1; then
   git mv DEMO.md "${NEW_ENV}.md"
 fi
 
