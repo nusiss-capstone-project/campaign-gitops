@@ -1,10 +1,15 @@
 # Demo-oriented kube-prometheus-stack (monitoring namespace).
 # Chart: prometheus-community/kube-prometheus-stack@72.9.1
+#
+# ArgoCD sync CPU is dominated by Grafana dashboard ConfigMaps and default
+# PrometheusRules — those are disabled here. Runtime targets OTel ServiceMonitor.
 
 fullnameOverride: ""
 fullnameOverride: ""
 
-# --- Disable noisy / heavy components ---
+crds:
+  enabled: true
+
 alertmanager:
   enabled: false
 
@@ -26,32 +31,46 @@ kubeScheduler:
 kubeControllerManager:
   enabled: false
 
-# Keep core kubelet/API scrapes light; disable control-plane rule packs we turned off.
+kubeApiServer:
+  enabled: false
+
+coreDns:
+  enabled: false
+
+kubeDns:
+  enabled: false
+
+kubelet:
+  enabled: true
+  serviceMonitor:
+    cAdvisor: false
+    probes: true
+    resource: true
+
+# Dozens of PrometheusRule CRs — major sync cost; not needed for demo metrics.
 defaultRules:
-  create: true
-  rules:
-    alertmanager: false
-    etcd: false
-    kubeControllerManager: false
-    kubeProxy: false
-    kubeSchedulerAlerting: false
-    kubeSchedulerRecording: false
-    nodeExporterAlerting: false
-    nodeExporterRecording: false
+  create: false
 
 grafana:
   enabled: true
   adminUser: admin
   adminPassword: campaign-demo
-  defaultDashboardsEnabled: true
+  # Huge ConfigMaps; biggest ArgoCD/repo-server CPU spike during sync.
+  defaultDashboardsEnabled: false
+  forceDeployDashboards: false
+  sidecar:
+    dashboards:
+      enabled: false
+    datasources:
+      enabled: true
   ingress:
     enabled: false
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 25m
+      memory: 64Mi
     limits:
-      cpu: 300m
+      cpu: 200m
       memory: 256Mi
   service:
     type: ClusterIP
@@ -60,8 +79,8 @@ grafana:
 prometheusOperator:
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 25m
+      memory: 64Mi
     limits:
       cpu: 200m
       memory: 256Mi
@@ -69,8 +88,8 @@ prometheusOperator:
 kube-state-metrics:
   resources:
     requests:
-      cpu: 20m
-      memory: 64Mi
+      cpu: 10m
+      memory: 32Mi
     limits:
       cpu: 100m
       memory: 128Mi
@@ -81,16 +100,15 @@ prometheus:
     retention: 3d
     scrapeInterval: 30s
     evaluationInterval: 30s
-    # Select ServiceMonitors labeled release=<helm release name>
     serviceMonitorSelectorNilUsesHelmValues: true
     podMonitorSelectorNilUsesHelmValues: true
     resources:
       requests:
-        cpu: 100m
-        memory: 512Mi
+        cpu: 50m
+        memory: 256Mi
       limits:
-        cpu: 500m
-        memory: 1Gi
+        cpu: 400m
+        memory: 768Mi
     storageSpec:
       volumeClaimTemplate:
         spec:

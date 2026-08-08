@@ -4,7 +4,7 @@ Lightweight Prometheus + Grafana + OTel Collector for campaign-dev demos.
 
 | Component | ArgoCD Application | Notes |
 |-----------|-------------------|--------|
-| kube-prometheus-stack `72.9.1` | `kube-prometheus-stack` | Prometheus, Grafana, Operator, kube-state-metrics |
+| kube-prometheus-stack `72.9.1` | `kube-prometheus-stack` | Prometheus, Grafana, Operator, kube-state-metrics (no default dashboards/rules — keeps ArgoCD sync light) |
 | OTel Collector (spanmetrics) | `otel-collector` | OTLP `:4317/4318`, metrics `:8889` |
 | Grafana IngressRoute | `monitoring-routes` | `https://grafana.campaignhub.best` |
 
