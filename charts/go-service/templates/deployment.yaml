@@ -82,6 +82,22 @@ spec:
             - name: OTEL_SERVICE_NAME
               value: {{ .Values.serviceName | quote }}
             {{- end }}
+            {{- if .Values.otel.appEnv }}
+            - name: APP_ENV
+              value: {{ .Values.otel.appEnv | quote }}
+            {{- end }}
+            {{- if .Values.otel.resourceAttributes }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: {{ .Values.otel.resourceAttributes | quote }}
+            {{- end }}
+            {{- if .Values.otel.tracesSampler }}
+            - name: OTEL_TRACES_SAMPLER
+              value: {{ .Values.otel.tracesSampler | quote }}
+            {{- end }}
+            {{- if .Values.otel.tracesSamplerArg }}
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: {{ .Values.otel.tracesSamplerArg | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}

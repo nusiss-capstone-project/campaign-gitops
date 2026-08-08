@@ -81,17 +81,24 @@ envFromSecret:
 # Extra container env vars (list). Merged after otel defaults when both set.
 extraEnv: []
 
-# In-cluster OTLP defaults (override per-service values as needed).
-# Go services require ENDPOINT + HEADERS + PROTOCOL; empty HEADERS disables export.
-# Collector is deployed via ArgoCD; Prometheus scrapes it from the IaC-installed stack.
+# OTLP → Grafana Cloud Alloy (in-cluster receiver; Alloy ships to Grafana Cloud).
+# Go services require ENDPOINT + HEADERS + PROTOCOL=http/protobuf; empty HEADERS disables export.
+# Use :4318 (OTLP/HTTP). :4317 is gRPC and is not supported by these services.
 otel:
   enabled: true
-  endpoint: http://otel-collector.monitoring.svc.cluster.local:4318
+  endpoint: http://grafana-cloud-alloy.monitoring.svc.cluster.local:4318
   protocol: http/protobuf
-  # Non-secret demo placeholder (app requires non-empty HEADERS).
+  # Non-secret placeholder for in-cluster Alloy (app requires non-empty HEADERS).
   headers: x-campaign-otel=dev
   # When true, also set OTEL_SERVICE_NAME from serviceName.
   setServiceName: true
+  # Log field `env` (defaults to "local" if unset).
+  appEnv: dev
+  # Comma-separated resource attributes (optional).
+  resourceAttributes: deployment.environment=dev,service.namespace=campaign-dev
+  # Trace sampler ratio argument for parentbased_traceidratio (optional; empty = omit).
+  tracesSampler: parentbased_traceidratio
+  tracesSamplerArg: "1.0"
 
 service:
   type: ClusterIP
