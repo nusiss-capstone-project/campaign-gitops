@@ -56,10 +56,6 @@ spec:
       services:
         - name: usergroup-mservice
           port: 8080
-    # Browser identity/KYC stays on campaign-dev (Singpass/Clerk callbacks).
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/identity-ms`)
-      kind: Rule
-      services:
-        - name: identity-mservice
-          namespace: campaign-dev
-          port: 8080
+    # No /identity-ms on demo host: Traefik forbids cross-namespace Service refs.
+    # Use https://campaignhub.best/identity-ms (campaign-dev). Forward-auth still
+    # calls identity-mservice.campaign-dev via middleware.
