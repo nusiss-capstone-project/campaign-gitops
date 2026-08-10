@@ -47,6 +47,22 @@ strategy:
     maxUnavailable: 0
     maxSurge: 1
 
+# When enabled, chart renders a Rollout instead of a Deployment (Argo Rollouts).
+# Other services keep rollout.enabled=false.
+rollout:
+  enabled: false
+  revisionHistoryLimit: 3
+  canary:
+    # Extra pod allowed during canary (needed when replicaCount is 1).
+    maxSurge: "1"
+    maxUnavailable: 0
+    # Traffic weight ≈ canary pod share behind the single Service selector.
+    steps:
+      - setWeight: 50
+      - pause:
+          duration: 3m
+      - setWeight: 100
+
 resources:
   requests:
     cpu: 100m
