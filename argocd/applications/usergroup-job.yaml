@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: demo-usergroup-job
+  name: demo1-usergroup-job
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
-    targetRevision: demo
+    targetRevision: demo1
     path: apps/usergroup-job
   destination:
     server: https://kubernetes.default.svc
-    namespace: campaign-demo
+    namespace: campaign-demo1
   syncPolicy:
     automated:
       prune: true

@@ -51,8 +51,8 @@ configFile:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      group_id: demo-asset-mservice
-      client_id: demo-asset-mservice
+      group_id: demo1-asset-mservice
+      client_id: demo1-asset-mservice
       topics:
         - payment.transaction.updated
 
@@ -64,7 +64,7 @@ externalSecret:
   targetSecretName: asset-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/demo/asset-mservice
+    key: campaign-center/demo1/asset-mservice
 
 envFromSecret:
   enabled: true

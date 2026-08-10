@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: demo-loongcollector-pipeline
+  name: demo1-loongcollector-pipeline
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -9,10 +9,10 @@ spec:
   project: default
   source:
     repoURL: https://github.com/nusiss-capstone-project/campaign-gitops.git
-    targetRevision: demo
+    targetRevision: demo1
     path: platform/loongcollector/pipelines
     directory:
-      include: "campaign-demo-stdout.yaml"
+      include: "campaign-demo1-stdout.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

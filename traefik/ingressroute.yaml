@@ -3,7 +3,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: campaign-center-http
-  namespace: campaign-demo
+  namespace: campaign-demo1
   labels:
     app.kubernetes.io/part-of: campaign-center
     app.kubernetes.io/managed-by: argocd
@@ -14,42 +14,42 @@ spec:
   tls:
     secretName: campaignhub-origin-tls
   routes:
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/task-ms`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/task-ms`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth
       services:
         - name: task-mservice
           port: 8080
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/campaign-center-api`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/campaign-center-api`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth
       services:
         - name: campaign-center-api
           port: 8080
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/reward-ms`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/reward-ms`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth
       services:
         - name: reward-mservice
           port: 8080
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/payment-ms`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/payment-ms`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth
       services:
         - name: payment-mservice
           port: 8080
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/asset-ms`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/asset-ms`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth
       services:
         - name: asset-mservice
           port: 8080
-    - match: Host(`demo.campaignhub.best`) && PathPrefix(`/usergroup-ms`)
+    - match: Host(`demo1.campaignhub.best`) && PathPrefix(`/usergroup-ms`)
       kind: Rule
       middlewares:
         - name: identity-forward-auth

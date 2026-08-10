@@ -43,7 +43,7 @@ configFile:
       enabled: true
       brokers:
         - kafka.messaging.svc.cluster.local:9092
-      client_id: demo-payment-mservice
+      client_id: demo1-payment-mservice
     log:
       level: debug
       file_path: ./logs/payment-mservice.log
@@ -61,7 +61,7 @@ externalSecret:
   targetSecretName: payment-mservice-secret
   refreshInterval: 1h
   remoteRef:
-    key: campaign-center/demo/payment-mservice
+    key: campaign-center/demo1/payment-mservice
 
 envFromSecret:
   enabled: true

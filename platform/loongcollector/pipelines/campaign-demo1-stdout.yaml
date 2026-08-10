@@ -1,11 +1,11 @@
-# Collect container stdout/stderr from campaign-demo → SLS Logstore.
+# Collect container stdout/stderr from campaign-demo1 → SLS Logstore.
 # Reuses the same SLS project / machine group as campaign-dev; filter by namespace in SLS.
 #
 # Prerequisite: SLS user-defined machine group k8s-group-campaign-k3s-dev heartbeat OK.
 apiVersion: telemetry.alibabacloud.com/v1alpha1
 kind: ClusterAliyunPipelineConfig
 metadata:
-  name: campaign-demo-stdout
+  name: campaign-demo1-stdout
   labels:
     app.kubernetes.io/name: loongcollector
     app.kubernetes.io/part-of: campaign-center
@@ -24,7 +24,7 @@ spec:
         IgnoringStderr: false
         IgnoringStdout: false
         ContainerFilters:
-          K8sNamespaceRegex: ^campaign-demo$
+          K8sNamespaceRegex: ^campaign-demo1$
     processors:
       - Type: processor_parse_json_native
         SourceKey: content
