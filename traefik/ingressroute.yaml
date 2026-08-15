@@ -21,6 +21,17 @@ spec:
       services:
         - name: task-mservice
           port: 8080
+    # Public web (landing page, etc.): rate-limit only. ForwardAuth on this
+    # path adds an identity hop to every unauthenticated GET and is the main
+    # reason in-cluster/load-test latency climbs to multiple seconds.
+    - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api/v1/web`)
+      kind: Rule
+      priority: 100
+      middlewares:
+        - name: campaign-center-api-rate-limit
+      services:
+        - name: campaign-center-api
+          port: 8080
     - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api`)
       kind: Rule
       middlewares:
