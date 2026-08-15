@@ -24,6 +24,7 @@ spec:
     - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api`)
       kind: Rule
       middlewares:
+        - name: campaign-center-api-rate-limit
         - name: identity-forward-auth
       services:
         - name: campaign-center-api
