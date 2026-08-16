@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: 3.2.6
+description: loongcollector
+keywords:
+- loongcollector
+- namespace:loongcollector
+- releaseName:loongcollector
+- category:ops
+- console-visibility:false
+maintainers:
+- email: linrunqi.lrq@alibaba-inc.com
+  name: taiye
+name: loongcollector
+version: 3.2.6

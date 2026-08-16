@@ -1,0 +1,115 @@
+serviceName: campaign-center-api
+
+image:
+  repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/campaign-center-api
+  tag: dev-202608160905
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: acr-secret
+
+replicaCount: 1
+
+# Canary via Argo Rollouts (Deployment is not rendered when enabled).
+rollout:
+  enabled: true
+  canary:
+    maxSurge: "1"
+    maxUnavailable: 0
+    steps:
+      # 1 stable + 1 canary while paused (maxSurge=1).
+      - setWeight: 50
+      - pause:
+          duration: 3m
+      - setWeight: 100
+
+containerPorts:
+  http: 8080
+  grpc: 5000
+
+probes:
+  liveness:
+    path: /campaign-center-api/v1/ping
+  readiness:
+    path: /campaign-center-api/v1/ping
+
+configFile:
+  enabled: true
+  name: config.yml
+  mountPath: /app/resources/config.yml
+  content:
+    http:
+      host: "0.0.0.0"
+      port: 8080
+    log:
+      level: info
+      file_path: ./logs/campaign-center-api.log
+    grpc:
+      host: "0.0.0.0"
+      port: 5000
+      connect_timeout: 5
+      max_pool_size: 100
+    redis:
+      enabled: false
+      host: redis.redis.svc.cluster.local
+      port: "6379"
+    openai:
+      api_key: ""
+      base_url: ""
+      model: "gpt-4o-mini"
+    system:
+      allowed_origins:
+        - https://campaign-center-admin-web.vercel.app
+        - https://finverse-web.vercel.app
+        - http://localhost:3000
+    oss:
+      endpoint: oss-ap-southeast-1.aliyuncs.com
+      bucket: campaign-center-img
+      public_base_url: "https://cdn.campaignhub.best"
+      key_prefix: campaign-center
+    usergroup_grpc:
+      host: usergroup-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    task_grpc:
+      host: task-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    reward_grpc:
+      host: reward-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    kafka:
+      enabled: true
+      brokers:
+        - kafka.messaging.svc.cluster.local:9092
+      group_id: campaign-center-api
+      client_id: campaign-center-api
+      topics:
+        - task.events.completed
+        - reward.distribution.result
+
+externalSecret:
+  enabled: true
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: campaign-center-api-secret
+  refreshInterval: 1h
+  remoteRef:
+    key: campaign-center/dev/campaign-center-api
+
+envFromSecret:
+  enabled: true
+  secretName: campaign-center-api-secret
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:  
+  name: loongcollector-config
+  namespace: {{ .Release.Namespace }}
+data:
+  ilogtail_config.json: |
+  {{- if .Values.customConfig | trim }}
+    {{ .Values.customConfig | indent 4 }}
+  {{- else }}
+    {
+        "primary_region" : "{{ include "loongcollector.rawRegion" . }}",
+        "config_servers" :
+        [
+            "http://logtail.{{ include "loongcollector.endpoint" . }}"
+        ],
+        "data_servers" :
+        [
+            {
+                "region" : "{{ include "loongcollector.rawRegion" . }}",
+                "endpoint_list": [
+                    "http://{{ include "loongcollector.endpoint" . }}"
+                ]
+            }
+        ]
+    }
+  {{- end }}

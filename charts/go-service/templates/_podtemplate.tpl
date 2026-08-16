@@ -1,0 +1,121 @@
+{{/*
+Pod template shared by Deployment and Rollout.
+*/}}
+{{- define "go-service.podTemplate" -}}
+metadata:
+  labels:
+    {{- include "go-service.selectorLabels" . | nindent 4 }}
+    {{- with .Values.podLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.podAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  serviceAccountName: {{ include "go-service.serviceAccountName" . }}
+  containers:
+    - name: {{ include "go-service.fullname" . }}
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      ports:
+        - name: http
+          containerPort: {{ .Values.containerPorts.http }}
+          protocol: TCP
+        - name: grpc
+          containerPort: {{ .Values.containerPorts.grpc }}
+          protocol: TCP
+      {{- if .Values.probes.liveness.enabled }}
+      livenessProbe:
+        httpGet:
+          path: {{ .Values.probes.liveness.path }}
+          port: {{ include "go-service.resolvePort" (dict "root" . "portName" .Values.probes.liveness.port) }}
+        initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+        periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+        timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+        failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+      {{- end }}
+      {{- if .Values.probes.readiness.enabled }}
+      readinessProbe:
+        httpGet:
+          path: {{ .Values.probes.readiness.path }}
+          port: {{ include "go-service.resolvePort" (dict "root" . "portName" .Values.probes.readiness.port) }}
+        initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+        periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+        timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+        failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+      {{- end }}
+      {{- if .Values.envFromSecret.enabled }}
+      envFrom:
+        - secretRef:
+            name: {{ .Values.envFromSecret.secretName }}
+      {{- end }}
+      {{- if or .Values.otel.enabled .Values.extraEnv .Values.kafkaTopicPrefix }}
+      env:
+        {{- if .Values.otel.enabled }}
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ .Values.otel.endpoint | quote }}
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: {{ .Values.otel.protocol | quote }}
+        - name: OTEL_EXPORTER_OTLP_HEADERS
+          value: {{ .Values.otel.headers | quote }}
+        {{- if and .Values.otel.setServiceName .Values.serviceName }}
+        - name: OTEL_SERVICE_NAME
+          value: {{ .Values.serviceName | quote }}
+        {{- end }}
+        {{- if .Values.otel.appEnv }}
+        - name: APP_ENV
+          value: {{ .Values.otel.appEnv | quote }}
+        {{- end }}
+        {{- if .Values.otel.resourceAttributes }}
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: {{ .Values.otel.resourceAttributes | quote }}
+        {{- end }}
+        {{- if .Values.otel.tracesSampler }}
+        - name: OTEL_TRACES_SAMPLER
+          value: {{ .Values.otel.tracesSampler | quote }}
+        {{- end }}
+        {{- if .Values.otel.tracesSamplerArg }}
+        - name: OTEL_TRACES_SAMPLER_ARG
+          value: {{ .Values.otel.tracesSamplerArg | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.kafkaTopicPrefix }}
+        - name: KAFKA_TOPIC_PREFIX
+          value: {{ .Values.kafkaTopicPrefix | quote }}
+        {{- end }}
+        {{- with .Values.extraEnv }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
+      {{- if .Values.configFile.enabled }}
+      volumeMounts:
+        - name: config
+          mountPath: {{ .Values.configFile.mountPath }}
+          subPath: {{ .Values.configFile.name }}
+      {{- end }}
+  {{- if .Values.configFile.enabled }}
+  volumes:
+    - name: config
+      configMap:
+        name: {{ include "go-service.fullname" . }}-config
+  {{- end }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,128 @@
+{{ if .Release.IsInstall}}
+---
+{{ if .Values.legacy.ingressDashboardEnabled }}
+apiVersion: log.alibabacloud.com/v1alpha1
+kind: AliyunLogConfig
+metadata:
+  name: k8s-nginx-ingress
+  namespace: {{ .Namespace }}
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  logstore: nginx-ingress
+  productCode: k8s-nginx-ingress
+  logtailConfig:
+    inputType: plugin
+    configName: k8s-nginx-ingress
+    inputDetail:
+      plugin:
+        inputs:
+        - type: service_docker_stdout
+          detail:
+            IncludeLabel:
+              io.kubernetes.container.name: nginx-ingress-controller
+            Stderr: true
+            Stdout: true
+        processors:
+        - type: processor_regex
+          detail:
+            KeepSource: false
+            Keys:
+            - client_ip
+            - x_forward_for
+            - remote_user
+            - time
+            - method
+            - url
+            - version
+            - status
+            - body_bytes_sent
+            - http_referer
+            - http_user_agent
+            - request_length
+            - request_time
+            - proxy_upstream_name
+            - upstream_addr
+            - upstream_response_length
+            - upstream_response_time
+            - upstream_status
+            - req_id
+            - host
+            - proxy_alternative_upstream_name
+            NoKeyError: true
+            NoMatchError: true
+            Regex: ^(\S+)\s-\s\[([^]]+)]\s-\s(\S+)\s\[(\S+)\s\S+\s"(\w+)\s(\S+)\s([^"]+)"\s(\d+)\s(\d+)\s"([^"]*)"\s"([^"]*)"\s(\S+)\s(\S+)+\s\[([^]]*)]\s(\S+?(?:,\s\S+?)*)\s(\S+?(?:,\s\S+?)*)\s(\S+?(?:,\s\S+?)*)\s(\S+?(?:,\s\S+?)*)\s(\S+)\s*(\S*)\s*\[*([^]]*)\]*.*
+            SourceKey: content
+{{ end }}
+
+---
+{{ if .Values.legacy.coreDNSDashboardEnabled }}
+apiVersion: log.alibabacloud.com/v1alpha1
+kind: AliyunLogConfig
+metadata:
+  #     Your config name, must be unique in you k8s cluster.
+  name: k8s-coredns-log
+  namespace: kube-system
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  # logstore name to upload log
+  logstore: coredns-log
+  # logtail config detail
+  productCode: k8s-coredns
+  logtailConfig:
+    inputType: plugin
+    # logtail config name, should be same with [metadata.name]
+    configName: k8s-coredns-log
+    inputDetail:
+      plugin:
+        inputs:
+        - type: service_docker_stdout
+          detail:
+            IncludeLabel:
+              io.kubernetes.container.name: coredns
+            Stderr: true
+            Stdout: true
+        processors:
+        - type: processor_regex
+          detail:
+            KeepSource: false
+            KeepSourceIfParseError: true
+            Keys:
+            - level
+            - remote
+            - port
+            - id
+            - type
+            - class
+            - name
+            - proto
+            - size
+            - do
+            - bufsize
+            - rcode
+            - rflags
+            - rsize
+            - duration
+            NoKeyError: true
+            NoMatchError: false
+            FullMatch: false
+            Regex: \[([^]]+)]\s([^:]+):(\S+)\s+-\s+(\S+)\s+"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+([^"]+)"\s+(\S+)\s+(\S+)\s+(\S+)\s+([\d\.]+).*
+            SourceKey: content
+        - type: processor_regex
+          detail:
+            KeepSource: false
+            KeepSourceIfParseError: true
+            Keys:
+            - error
+            - rcode
+            - name
+            - type
+            - errorMsg
+            NoKeyError: false
+            NoMatchError: false
+            FullMatch: false
+            Regex: \[ERROR]\s+(plugin/errors):\s+(\S)+\s+(\S+)\s+([^:]*):\s+(.*)
+            SourceKey: content
+{{ end }}
+{{ end }}

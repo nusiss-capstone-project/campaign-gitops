@@ -1,0 +1,85 @@
+serviceName: asset-mservice
+
+image:
+  repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/asset-mservice
+  tag: dev-202608160735
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: acr-secret
+
+replicaCount: 1
+
+containerPorts:
+  http: 8080
+  grpc: 5001
+
+probes:
+  liveness:
+    path: /asset-ms/v1/ping
+  readiness:
+    path: /asset-ms/v1/ping
+
+configFile:
+  enabled: true
+  name: config.yml
+  mountPath: /app/resources/config.yml
+  content:
+    grpc:
+      host: "0.0.0.0"
+      port: 5001
+      connect_timeout: 3
+      max_pool_size: 200
+    http:
+      host: "0.0.0.0"
+      port: 8080
+    log:
+      level: debug
+      file_path: ./logs/asset-mservice.log
+    system:
+      allowed_origins:
+        - https://campaign-center-admin-web.vercel.app
+        - https://finverse-web.vercel.app
+        - http://localhost:3000
+    payment_grpc:
+      host: payment-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    identity:
+      host: identity-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    kafka:
+      enabled: true
+      brokers:
+        - kafka.messaging.svc.cluster.local:9092
+      group_id: asset-mservice
+      client_id: asset-mservice
+      topics:
+        - payment.transaction.updated
+
+externalSecret:
+  enabled: true
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: asset-mservice-secret
+  refreshInterval: 1h
+  remoteRef:
+    key: campaign-center/dev/asset-mservice
+
+envFromSecret:
+  enabled: true
+  secretName: asset-mservice-secret
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5001
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -1,0 +1,233 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-manager-role
+  labels:
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: [ "" ]
+  resources: [ "secrets" ]
+  resourceNames: [ "addon.arms.token", "addon.aliyuncsmanagedmserole.token", "addon.log.token", "addon.cms.token" ]
+  verbs: [ "get" ]
+
+
+# CRD 
+- apiGroups: [ "log.alibabacloud.com" ]
+  resources: [ "aliyunlogconfigs" ]
+  verbs: [ "create", "delete", "get", "list", "watch", "patch", "update" ]
+- apiGroups: [ "telemetry.alibabacloud.com" ]
+  resources: [ "clusteraliyunpipelineconfigs" ]
+  verbs: [ "create", "delete", "get", "list", "watch", "patch", "update" ]
+- apiGroups: [ "telemetry.alibabacloud.com" ]
+  resources: [ "clusteraliyunpipelineconfigs/finalizers", "clusteraliyunpipelineconfigs/status" ]
+  verbs: [ "get", "patch", "update" ]
+# events  
+- apiGroups: [""] 
+  resources: [ "events" ]
+  verbs: [ "create", "patch", "update" ]
+# resources
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "create", "list", "watch"]
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - configmaps
+  resourceNames:
+  - "alibaba-log-configuration"
+  - "alibaba-cloud-log-config-checkpoint.v1"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.1"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.2"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.3"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.4"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.5"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.6"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.7"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.8"
+  - "alibaba-cloud-log-config-checkpoint.v1-no.9"
+  verbs:
+  - update
+  - get
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch", "update"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["create", "update", "get", "list", "watch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "deployments", "replicasets", "daemonsets"]
+  verbs: [ "get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes", "persistentvolumeclaims", "persistentvolumes", "storageclasses"]
+  verbs: [ "get", "list", "watch"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["nodes", "persistentvolumeclaims", "persistentvolumes", "storageclasses"]
+  verbs: [ "get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["cronjobs", "jobs"]
+  verbs: [ "get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+{{ if .Values.operator.pilot.pilotx }}
+- apiGroups: ["o11y.aliyun.dev"]
+  resources: ["instrumentations"]
+  verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+- apiGroups: ["o11y.aliyun.dev"]
+  resources: ["instrumentations/finalizers"]
+  verbs: ["update"]
+- apiGroups: ["o11y.aliyun.dev"]
+  resources: ["instrumentations/status"]
+  verbs: ["get", "patch", "update"]
+{{ end }}
+
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: '{{ .Values.operator.serviceAccountName }}'
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: loongcollector-operator
+    app.kubernetes.io/part-of: loongcollector-operator
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-manager-rolebinding
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: loongcollector-operator
+    app.kubernetes.io/part-of: loongcollector-operator
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: '{{ include "loongcollector-operator.fullname" . }}-manager-role'
+subjects:
+- kind: ServiceAccount
+  name: '{{ .Values.operator.serviceAccountName }}'
+  namespace: '{{ .Release.Namespace }}'
+
+
+
+{{- if .Values.enablePrometheus }}
+--- 
+# prometheus  
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-prometheus-manager-role
+  labels:
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    resourceNames:
+      - loongcollector-cluster
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
+  - apiGroups:
+      - o11y.alibabacloud.com
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - alertmanagers
+      - alertmanagers/finalizers
+      - prometheuses
+      - prometheuses/finalizers
+      - servicemonitors
+      - podmonitors
+      - probes
+      - prometheusrules
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+      - "apps"
+      - "extensions"
+    resources:
+      - namespaces
+      - pods
+      - nodes
+      - nodes/metrics
+      - services
+      - services/proxy
+      - ingresses
+      - endpoints
+      - daemonsets
+      - deployments
+      - replicasets
+      - replicationcontrollers
+      - serviceaccounts
+      - configmaps
+      - resourcequotas
+      - limitranges
+      - persistentvolumes
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-prometheus-manager-rolebinding
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: loongcollector-operator
+    app.kubernetes.io/part-of: loongcollector-operator
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: '{{ include "loongcollector-operator.fullname" . }}-prometheus-manager-role'
+subjects:
+  - kind: ServiceAccount
+    name: '{{ .Values.operator.serviceAccountName }}'
+    namespace: '{{ .Release.Namespace }}'
+
+{{ end }}    

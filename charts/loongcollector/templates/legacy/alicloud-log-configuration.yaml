@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alibaba-log-configuration
+  namespace: {{ .Values.NameSpace }}
+  labels:
+    logtail-deployment: v2
+data:
+    log-project: "{{ include "loongcollector.project" . }}"
+    log-endpoint: "{{ include "loongcollector.endpoint" . }}"    
+    log-machine-group: "{{ include "loongcollector.baseMachineGroup" . }}"
+    log-ali-uid: "{{ include "loongcollector.uid" . }}"
+    log-config-path: "/etc/ilogtail/conf/{{ include "loongcollector.rawRegion" . }}/ilogtail_config.json"

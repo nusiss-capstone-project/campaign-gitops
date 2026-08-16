@@ -1,0 +1,254 @@
+{{- $ca := genCA "admission-controller-ca" 3650 }}
+{{- $cn := printf "%s-%s" .Release.Name .Chart.Name }}
+{{- $altName1 := printf "%s-%s.%s" .Release.Name .Chart.Name .Release.Namespace }}
+{{- $altName2 := printf "%s-%s.%s.svc" .Release.Name .Chart.Name .Release.Namespace }}
+{{- $tmp := include "loongcollector-operator.fullname" .}}
+{{- $altName3 := printf  "%s-webhook-service.%s.svc" $tmp .Release.Namespace }}
+{{- $cert := genSignedCert $cn nil (list $altName1 $altName2 $altName3) 3650 $ca }}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-webhook-server-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+type: Opaque
+data:
+  tls.crt: {{ b64enc $cert.Cert }}
+  tls.key: {{ b64enc $cert.Key }}
+  ca.crt: {{ b64enc $cert.Cert }}
+
+---
+
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "loongcollector-operator.fullname" . }}-mutating-webhook-configuration
+  labels:
+  {{- include "loongcollector-operator.labels" . | nindent 4 }}
+webhooks:
+{{ if .Values.enablePilot }}
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: {{ b64enc $ca.Cert }}
+      service:
+        name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+        namespace: '{{ .Release.Namespace }}'
+        path: /loongcollector-operator-mutate-pod
+    failurePolicy: Ignore
+    name: mpod.aliyun.dev
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+{{- end }}
+  - name: aliyun.pipeline.webhook
+    clientConfig:
+      caBundle: {{ b64enc $ca.Cert }}
+      service:
+        namespace: {{ .Release.Namespace }}
+        name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+        path: "/mutate-alibabacloud-com-aliyunpipelineconfig"
+    admissionReviewVersions: ["v1", "v1beta1"]
+    sideEffects: None
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["telemetry.alibabacloud.com"]
+        apiVersions: ["v1alpha1"]
+        resources: ["clusteraliyunpipelineconfigs", "namespacealiyunpipelineconfigs"]
+
+---
+{{ if .Values.enablePilot }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ template "fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+webhooks:
+  {{- if .Values.operator.admissionRegistration.onlyLabel }}
+    {{- /* Case 1: Namespace selector enabled, and object selector is not injected */}}
+    - name: namespace.mse.{{ template "fullname" . }}.k8s.io
+      namespaceSelector:
+        matchExpressions:
+          - key: mse-enable
+            operator: In
+            values:
+              - enabled
+      objectSelector:
+        matchExpressions:
+          - key: msePilotAutoEnable
+            operator: NotIn
+            values:
+              - 'off'
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+    - name: namespace.arms.{{ template "fullname" . }}.k8s.io
+      namespaceSelector:
+        matchExpressions:
+          - key: arms-enable
+            operator: In
+            values:
+              - enabled
+      objectSelector:
+        matchExpressions:
+          - key: armsPilotAutoEnable
+            operator: NotIn
+            values:
+              - 'off'
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+      {{- /* Case 2: no namespace label, but object selector is enabled (and revision label is not, which has priority) */}}
+    - name: object.mse.{{ template "fullname" . }}.k8s.io
+      objectSelector:
+        matchExpressions:
+          - key: msePilotAutoEnable
+            operator: In
+            values:
+              - 'on'
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+    - name: object.arms.{{ template "fullname" . }}.k8s.io
+      namespaceSelector:
+        matchExpressions:
+          - key: arms-enable
+            operator: DoesNotExist
+      objectSelector:
+        matchExpressions:
+          - key: armsPilotAutoEnable
+            operator: In
+            values:
+              - 'on'
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+    - name: object.msha.{{ template "fullname" . }}.k8s.io
+      objectSelector:
+        matchExpressions:
+          - key: mshaEnable
+            operator: In
+            values:
+              - 'on'
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+      {{- else }}
+    - name: all.{{ template "fullname" . }}.k8s.io
+      clientConfig:
+        caBundle: {{ b64enc $ca.Cert }}
+        service:
+          namespace: {{ .Release.Namespace }}
+          name: '{{ include "loongcollector-operator.fullname" . }}-webhook-service'
+          path: /mutating-services
+      failurePolicy: {{ .Values.operator.admissionRegistration.failurePolicy }}
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      timeoutSeconds: 5
+      admissionReviewVersions: ["v1", "v1beta1"]
+      sideEffects: None
+      {{- end }}
+{{- end }}

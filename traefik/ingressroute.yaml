@@ -1,0 +1,66 @@
+# Shared Traefik HTTP routes for Campaign Center microservices.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: campaign-center-http
+  namespace: campaign-dev
+  labels:
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+spec:
+  entryPoints:
+    - web
+    - websecure
+  tls:
+    secretName: campaignhub-origin-tls
+  routes:
+    - match: Host(`campaignhub.best`) && PathPrefix(`/task-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: task-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/campaign-center-api`)
+      kind: Rule
+      middlewares:
+        # - name: campaign-center-api-rate-limit
+        - name: identity-forward-auth
+      services:
+        - name: campaign-center-api
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/reward-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: reward-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/payment-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: payment-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/asset-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: asset-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/usergroup-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: usergroup-mservice
+          port: 8080
+    - match: Host(`campaignhub.best`) && PathPrefix(`/identity-ms`)
+      kind: Rule
+      middlewares:
+        - name: identity-forward-auth
+      services:
+        - name: identity-mservice
+          port: 8080

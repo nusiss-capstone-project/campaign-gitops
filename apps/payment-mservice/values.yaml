@@ -1,0 +1,82 @@
+serviceName: payment-mservice
+
+image:
+  repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/payment-mservice
+  tag: dev-202608071542
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: acr-secret
+
+replicaCount: 1
+
+containerPorts:
+  http: 8080
+  grpc: 5001
+
+probes:
+  liveness:
+    path: /payment-ms/v1/ping
+  readiness:
+    path: /payment-ms/v1/ping
+
+configFile:
+  enabled: true
+  name: config.yml
+  mountPath: /app/resources/config.yml
+  content:
+    grpc:
+      host: "0.0.0.0"
+      port: 5001
+      connect_timeout: 3
+      max_pool_size: 200
+    identity:
+      host: identity-mservice.campaign-dev.svc.cluster.local
+      port: 5001
+    http:
+      host: "0.0.0.0"
+      port: 8080
+    stripe:
+      setup_success_url: "https://finverse-web.vercel.app/payment/setup"
+      setup_cancel_url: "https://finverse-web.vercel.app/payment/setup?setup=cancelled"
+    kafka:
+      enabled: true
+      brokers:
+        - kafka.messaging.svc.cluster.local:9092
+      client_id: payment-mservice
+    log:
+      level: debug
+      file_path: ./logs/payment-mservice.log
+    system:
+      allowed_origins:
+        - https://campaign-center-admin-web.vercel.app
+        - https://finverse-web.vercel.app
+        - http://localhost:3000
+
+externalSecret:
+  enabled: true
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: payment-mservice-secret
+  refreshInterval: 1h
+  remoteRef:
+    key: campaign-center/dev/payment-mservice
+
+envFromSecret:
+  enabled: true
+  secretName: payment-mservice-secret
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5001
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

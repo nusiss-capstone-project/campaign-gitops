@@ -1,0 +1,57 @@
+# LoongCollector → Alibaba Cloud SLS (ap-southeast-1 Intranet)
+# Chart: charts/loongcollector (vendored upstream 3.2.6 + existingSecret patch)
+
+projectName: log-service-1558398056044027-ap-southeast-1
+region: ap-southeast-1
+# Same account id as in the Project name / Vault key ALI_UID
+aliUid: "1558398056044027"
+net: Intranet
+clusterID: campaign-k3s-dev
+
+# Do not put AK/SK in Git. Synced by ExternalSecret → loongcollector-sls-credentials
+accessKeyID: ""
+accessKeySecret: ""
+existingSecret: loongcollector-sls-credentials
+existingSecretKeys:
+  accessKeyID: access-key-id
+  accessKeySecret: access-key-secret
+
+# Self-managed k3s: use ExternalKubernetes so ALICLOUD_LOG_K8S_FLAG=true
+# (needed for K8s namespace/pod metadata filters). AK still comes from existingSecret.
+clusterType: ExternalKubernetes
+clusterProfile: Default
+
+enablePrometheus: false
+enablePilot: false
+enableEBPF: false
+enableHybrid: false
+
+legacy:
+  slsMonitoring: false
+
+# k3s uses a non-default containerd socket; without this, stdout discovery finds 0 containers.
+containerRuntime:
+  useContainerd: true
+  # Mounted into the agent via hostPath /var/run → /var/run
+  sockPath: /var/run/k3s/containerd/containerd.sock
+
+# Keep agent light on small k3s nodes (defaults are 2 CPU / 2Gi).
+dsAgent:
+  cpuLimitsCore: 0.5
+  memLimitsMB: 512
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+operator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

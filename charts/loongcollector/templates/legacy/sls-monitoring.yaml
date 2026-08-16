@@ -1,0 +1,380 @@
+{{ if .Values.legacy.slsMonitoring }}     
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logtail-statefulset
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - name: profile
+      port: 4040
+      protocol: TCP
+      targetPort: 4040
+    - name: logtail-statefulset-endpoint
+      port: 18689
+      protocol: TCP
+      targetPort: 18689
+    - name: skywalking-v3
+      port: 11800
+      protocol: TCP
+      targetPort: 11800
+    - name: skywalking-v2
+      port: 21800
+      protocol: TCP
+      targetPort: 21800
+  selector:
+    app: logtail-statefulset
+  type: ClusterIP
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: logtail-statefulset
+  labels:
+    app: logtail-statefulset
+rules:
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - alertmanagers
+      - prometheuses
+      - prometheuses/finalizers
+      - alertmanagers/finalizers
+      - servicemonitors
+      - prometheusrules
+      - probes
+    verbs:
+      - '*'
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/metrics
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/metrics
+    verbs:
+      - get
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - nodes
+      - pods
+      - services
+      - resourcequotas
+      - services/proxy
+      - replicationcontrollers
+      - limitranges
+      - persistentvolumeclaims
+      - persistentvolumes
+      - namespaces
+      - endpoints
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - extensions
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - namespaces
+      - ingresses
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - configmaps
+      - replicasets
+      - namespaces
+      - statefulsets
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+      - jobs
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - list
+      - watch
+      - get
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: logtail-statefulset
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: logtail-statefulset
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: logtail-statefulset
+subjects:
+  - kind: ServiceAccount
+    namespace: {{ .Release.Namespace }}
+    name: logtail-statefulset
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: logtail-statefulset
+  name: logtail-statefulset
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.legacy.statefulset.replicas }}
+  serviceName: logtail-statefulset
+  selector:
+    matchLabels:
+      app: logtail-statefulset
+  template:
+    metadata:
+      labels:
+        app: logtail-statefulset
+    spec:
+      serviceAccountName: logtail-statefulset
+      affinity:
+        {{- toYaml .Values.legacy.statefulset.affinity | nindent 8 }}
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      {{- if eq .Values.clusterProfile "Edge" }}
+        alibabacloud.com/is-edge-worker: "false"
+      {{- end }}
+      initContainers:
+        - name: deps
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c", "cp -r /etc/ilogtail/agent-install/* /share"]
+          volumeMounts:
+            - mountPath: /share
+              name: dependencies
+          image: {{ include "replaceRegionId"  (list . .Values.legacy.depsLib.image.repository) }}:{{ .Values.legacy.depsLib.image.tag }}
+      containers:
+        - name: logtail
+          volumeMounts:
+          - mountPath: /etc/ilogtail/agent-install
+            name: dependencies
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ILOGTAIL_PROMETHEUS_CLUSTER_REPLICAS
+              value: "{{ .Values.legacy.statefulset.replicas }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath:  metadata.name
+            - name: ALIYUN_LOGTAIL_USER_ID
+              value: "{{ include "loongcollector.uid" . }}"
+            # key to start env config      
+            - name: HTTP_PROBE_PORT
+              value: '7953'
+            - name: ALICLOUD_LOG_DOCKER_ENV_CONFIG
+              value: 'true'
+            - name: ALICLOUD_LOG_PLUGIN_ENV_CONFIG
+              value: 'false'
+            - name: "ALICLOUD_LOG_DEFAULT_PROJECT"
+              value: "{{ include "loongcollector.project" . }}"
+            - name: "ALICLOUD_LOG_DEFAULT_MACHINE_GROUP"
+              value: "{{ include "loongcollector.baseMachineGroup" . }}-statefulset"
+            - name: ALIYUN_LOGTAIL_USER_DEFINED_ID
+              value: "$(ALICLOUD_LOG_DEFAULT_MACHINE_GROUP),{{ .Values.legacy.statefulset.externalUserDefineIDs }}"
+            - name: "ALIYUN_LOGTAIL_CONFIG"
+              value: "/usr/local/ilogtail/ilogtail_config.json"
+            # resource limit for logtail self process
+            - name: "LOONG_CPU_USAGE_LIMIT"
+              value: "{{.Values.legacy.statefulset.cpuLimitsCore}}"
+            - name: "LOONG_MEM_USAGE_LIMIT"
+              value: "{{.Values.legacy.statefulset.memLimitsMB}}"                   
+            - name: "ALICLOUD_LOG_STATEFULSET_FLAG"
+              value: "true"
+            {{- range .Values.legacy.statefulset.env }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ .value | quote }}
+              {{- end }}
+              {{- if .valueFrom }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- end }}
+            {{- end }}
+          image: {{ include "replaceRegionId"  (list . .Values.legacy.statefulset.image.repository) }}:{{ .Values.legacy.statefulset.image.tag }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "{{.Values.legacy.statefulset.cpuLimitsCore}}"
+              memory: "{{.Values.legacy.statefulset.memLimitsMB}}Mi"
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 7953
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /liveness
+              port: 7953
+              scheme: HTTP
+            initialDelaySeconds: 35
+            periodSeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 1         
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            procMount: Default
+            seccompProfile:
+              type: RuntimeDefault   
+          volumeMounts:
+            - mountPath: /usr/local/ilogtail/ilogtail_config.json
+              name: loongcollector-config
+              subPath: ilogtail_config.json
+      volumes:
+      - name: dependencies
+        emptyDir: { }
+      - name: loongcollector-config
+        configMap:
+          defaultMode: 420
+          name: loongcollector-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: "true"
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: sls-kube-state-metrics
+    app.kubernetes.io/part-of: kube-prometheus
+  name: sls-kube-state-metrics
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: sls-kube-state-metrics
+    app.kubernetes.io/part-of: kube-prometheus
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: sls-kube-state-metrics
+    app.kubernetes.io/part-of: kube-prometheus
+  name: sls-kube-state-metrics
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: exporter
+      app.kubernetes.io/name: sls-kube-state-metrics
+      app.kubernetes.io/part-of: kube-prometheus
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: sls-kube-state-metrics
+      labels:
+        app.kubernetes.io/component: exporter
+        app.kubernetes.io/name: sls-kube-state-metrics
+        app.kubernetes.io/part-of: kube-prometheus
+    spec:
+      serviceAccountName: logtail-statefulset
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      {{- if eq .Values.clusterProfile "Edge" }}
+        alibabacloud.com/is-edge-worker: "false"
+      {{- end }}
+      containers:
+      - name: sls-kube-state-metrics
+        image: {{ .Values.legacy.slsKubeStateMetrics.image.repository }}:{{ .Values.legacy.slsKubeStateMetrics.image.tag }}
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "200Mi"
+          limits:
+            cpu: 1000m
+            memory: 1000Mi
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+          privileged: false
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault   
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+{{ end }}

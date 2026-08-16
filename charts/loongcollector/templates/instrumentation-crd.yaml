@@ -1,0 +1,756 @@
+{{ if .Values.operator.pilot.pilotx }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: instrumentations.o11y.aliyun.dev
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.12.0
+  labels:
+  {{- include "pilotx.labels" . | nindent 4 }}
+spec:
+  group: o11y.aliyun.dev
+  names:
+    kind: Instrumentation
+    listKind: InstrumentationList
+    plural: instrumentations
+    singular: instrumentation
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: Instrumentation is the Schema for the instrumentations API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: InstrumentationSpec defines the desired state of Instrumentation
+              properties:
+                conflictConditions:
+                  items:
+                    properties:
+                      key:
+                        type: string
+                      policy:
+                        type: string
+                      source:
+                        type: string
+                      value:
+                        type: string
+                    required:
+                      - key
+                      - policy
+                      - source
+                    type: object
+                  type: array
+                containerModifier:
+                  description: ContainerModifiers defines rules to modify existing containers
+                  properties:
+                    args:
+                      description: Cannot be updated in Container
+                      items:
+                        type: string
+                      type: array
+                    argsModifierPolicy:
+                      description: ModifyPolicyType defines how to modify existing fields
+                      type: string
+                    env:
+                      description: patchStrategy:"merge" patchMergeKey:"name"
+                      items:
+                        properties:
+                          modifierPolicy:
+                            description: ModifyPolicyType defines how to modify existing
+                              fields
+                            type: string
+                          name:
+                            description: Name of the environment variable. Must be a
+                              C_IDENTIFIER.
+                            type: string
+                          value:
+                            description: 'Variable references $(VAR_NAME) are expanded
+                            using the previously defined environment variables in
+                            the container and any service environment variables. If
+                            a variable cannot be resolved, the reference in the input
+                            string will be unchanged. Double $$ are reduced to a single
+                            $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                            "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                            Escaped references will never be expanded, regardless
+                            of whether the variable exists or not. Defaults to "".'
+                            type: string
+                          valueFrom:
+                            description: Source for the environment variable's value.
+                              Cannot be used if value is not empty.
+                            properties:
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap.
+                                properties:
+                                  key:
+                                    description: The key to select.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the ConfigMap or its
+                                      key must be defined
+                                    type: boolean
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              fieldRef:
+                                description: 'Selects a field of the pod: supports metadata.name,
+                                metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                spec.serviceAccountName, status.hostIP, status.podIP,
+                                status.podIPs.'
+                                properties:
+                                  apiVersion:
+                                    description: Version of the schema the FieldPath
+                                      is written in terms of, defaults to "v1".
+                                    type: string
+                                  fieldPath:
+                                    description: Path of the field to select in the
+                                      specified API version.
+                                    type: string
+                                required:
+                                  - fieldPath
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              resourceFieldRef:
+                                description: 'Selects a resource of the container: only
+                                resources limits and requests (limits.cpu, limits.memory,
+                                limits.ephemeral-storage, requests.cpu, requests.memory
+                                and requests.ephemeral-storage) are currently supported.'
+                                properties:
+                                  containerName:
+                                    description: 'Container name: required for volumes,
+                                    optional for env vars'
+                                    type: string
+                                  divisor:
+                                    anyOf:
+                                      - type: integer
+                                      - type: string
+                                    description: Specifies the output format of the
+                                      exposed resources, defaults to "1"
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  resource:
+                                    description: 'Required: resource to select'
+                                    type: string
+                                required:
+                                  - resource
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              secretKeyRef:
+                                description: Selects a key of a secret in the pod's
+                                  namespace
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.  Must
+                                      be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the Secret or its key
+                                      must be defined
+                                    type: boolean
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            type: object
+                        required:
+                          - name
+                        type: object
+                      type: array
+                    ports:
+                      description: patchStrategy:"merge" patchMergeKey:"containerPort"
+                      items:
+                        description: ContainerPort represents a network port in a single
+                          container.
+                        properties:
+                          containerPort:
+                            description: Number of port to expose on the pod's IP address.
+                              This must be a valid port number, 0 < x < 65536.
+                            format: int32
+                            type: integer
+                          hostIP:
+                            description: What host IP to bind the external port to.
+                            type: string
+                          hostPort:
+                            description: Number of port to expose on the host. If specified,
+                              this must be a valid port number, 0 < x < 65536. If HostNetwork
+                              is specified, this must match ContainerPort. Most containers
+                              do not need this.
+                            format: int32
+                            type: integer
+                          name:
+                            description: If specified, this must be an IANA_SVC_NAME
+                              and unique within the pod. Each named port in a pod must
+                              have a unique name. Name for the port that can be referred
+                              to by services.
+                            type: string
+                          protocol:
+                            default: TCP
+                            description: Protocol for port. Must be UDP, TCP, or SCTP.
+                              Defaults to "TCP".
+                            type: string
+                        required:
+                          - containerPort
+                        type: object
+                      type: array
+                    volumeMounts:
+                      description: patchStrategy:"merge" patchMergeKey:"mountPath"
+                      items:
+                        description: VolumeMount describes a mounting of a Volume within
+                          a container.
+                        properties:
+                          mountPath:
+                            description: Path within the container at which the volume
+                              should be mounted.  Must not contain ':'.
+                            type: string
+                          mountPropagation:
+                            description: mountPropagation determines how mounts are
+                              propagated from the host to container and the other way
+                              around. When not set, MountPropagationNone is used. This
+                              field is beta in 1.10.
+                            type: string
+                          name:
+                            description: This must match the Name of a Volume.
+                            type: string
+                          readOnly:
+                            description: Mounted read-only if true, read-write otherwise
+                              (false or unspecified). Defaults to false.
+                            type: boolean
+                          subPath:
+                            description: Path within the volume from which the container's
+                              volume should be mounted. Defaults to "" (volume's root).
+                            type: string
+                          subPathExpr:
+                            description: Expanded path within the volume from which
+                              the container's volume should be mounted. Behaves similarly
+                              to SubPath but environment variable references $(VAR_NAME)
+                              are expanded using the container's environment. Defaults
+                              to "" (volume's root). SubPathExpr and SubPath are mutually
+                              exclusive.
+                            type: string
+                        required:
+                          - mountPath
+                          - name
+                        type: object
+                      type: array
+                  type: object
+                containers:
+                  description: Containers is the list of sidecar containers to be injected
+                    into the selected pod
+                  items:
+                    description: SidecarContainer defines the container of Sidecar
+                    properties:
+                      podInjectPolicy:
+                        description: The rules that injected SidecarContainer into Pod.spec.containers,
+                          not takes effect in initContainers If BeforeAppContainer,
+                          the SidecarContainer will be injected in front of the pod.spec.containers
+                          otherwise it will be injected into the back. default BeforeAppContainerType
+                        type: string
+                      shareVolumePolicy:
+                        description: If ShareVolumePolicy is enabled, the sidecar container
+                          will share the other container's VolumeMounts in the pod(don't
+                          contains the injected sidecar container).
+                        properties:
+                          type:
+                            type: string
+                        type: object
+                      transferEnv:
+                        description: TransferEnv will transfer env info from other container
+                          SourceContainerName is pod.spec.container[x].name; EnvName
+                          is pod.spec.container[x].Env.name
+                        items:
+                          properties:
+                            envName:
+                              type: string
+                            envNames:
+                              items:
+                                type: string
+                              type: array
+                            sourceContainerName:
+                              type: string
+                            sourceContainerNameFrom:
+                              properties:
+                                fieldRef:
+                                  description: 'Selects a field of the pod: supports
+                                  metadata.name, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`,'
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in the
+                                        specified API version.
+                                      type: string
+                                  required:
+                                    - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          type: object
+                        type: array
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: array
+                disable:
+                  description: Disable indicates that the Instrumentation is paused
+                    to update the injected pods, but it don't affect the webhook inject
+                    instrumentations into the newly created pods. default is false
+                  type: boolean
+                initContainerModifier:
+                  description: InitContainerModifiers defines rules to modify existing
+                    initContainers
+                  properties:
+                    args:
+                      description: Cannot be updated in Container
+                      items:
+                        type: string
+                      type: array
+                    argsModifierPolicy:
+                      description: ModifyPolicyType defines how to modify existing fields
+                      type: string
+                    env:
+                      description: patchStrategy:"merge" patchMergeKey:"name"
+                      items:
+                        properties:
+                          modifierPolicy:
+                            description: ModifyPolicyType defines how to modify existing
+                              fields
+                            type: string
+                          name:
+                            description: Name of the environment variable. Must be a
+                              C_IDENTIFIER.
+                            type: string
+                          value:
+                            description: 'Variable references $(VAR_NAME) are expanded
+                            using the previously defined environment variables in
+                            the container and any service environment variables. If
+                            a variable cannot be resolved, the reference in the input
+                            string will be unchanged. Double $$ are reduced to a single
+                            $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                            "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                            Escaped references will never be expanded, regardless
+                            of whether the variable exists or not. Defaults to "".'
+                            type: string
+                          valueFrom:
+                            description: Source for the environment variable's value.
+                              Cannot be used if value is not empty.
+                            properties:
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap.
+                                properties:
+                                  key:
+                                    description: The key to select.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the ConfigMap or its
+                                      key must be defined
+                                    type: boolean
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              fieldRef:
+                                description: 'Selects a field of the pod: supports metadata.name,
+                                metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                spec.serviceAccountName, status.hostIP, status.podIP,
+                                status.podIPs.'
+                                properties:
+                                  apiVersion:
+                                    description: Version of the schema the FieldPath
+                                      is written in terms of, defaults to "v1".
+                                    type: string
+                                  fieldPath:
+                                    description: Path of the field to select in the
+                                      specified API version.
+                                    type: string
+                                required:
+                                  - fieldPath
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              resourceFieldRef:
+                                description: 'Selects a resource of the container: only
+                                resources limits and requests (limits.cpu, limits.memory,
+                                limits.ephemeral-storage, requests.cpu, requests.memory
+                                and requests.ephemeral-storage) are currently supported.'
+                                properties:
+                                  containerName:
+                                    description: 'Container name: required for volumes,
+                                    optional for env vars'
+                                    type: string
+                                  divisor:
+                                    anyOf:
+                                      - type: integer
+                                      - type: string
+                                    description: Specifies the output format of the
+                                      exposed resources, defaults to "1"
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  resource:
+                                    description: 'Required: resource to select'
+                                    type: string
+                                required:
+                                  - resource
+                                type: object
+                                x-kubernetes-map-type: atomic
+                              secretKeyRef:
+                                description: Selects a key of a secret in the pod's
+                                  namespace
+                                properties:
+                                  key:
+                                    description: The key of the secret to select from.  Must
+                                      be a valid secret key.
+                                    type: string
+                                  name:
+                                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                    type: string
+                                  optional:
+                                    description: Specify whether the Secret or its key
+                                      must be defined
+                                    type: boolean
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            type: object
+                        required:
+                          - name
+                        type: object
+                      type: array
+                    ports:
+                      description: patchStrategy:"merge" patchMergeKey:"containerPort"
+                      items:
+                        description: ContainerPort represents a network port in a single
+                          container.
+                        properties:
+                          containerPort:
+                            description: Number of port to expose on the pod's IP address.
+                              This must be a valid port number, 0 < x < 65536.
+                            format: int32
+                            type: integer
+                          hostIP:
+                            description: What host IP to bind the external port to.
+                            type: string
+                          hostPort:
+                            description: Number of port to expose on the host. If specified,
+                              this must be a valid port number, 0 < x < 65536. If HostNetwork
+                              is specified, this must match ContainerPort. Most containers
+                              do not need this.
+                            format: int32
+                            type: integer
+                          name:
+                            description: If specified, this must be an IANA_SVC_NAME
+                              and unique within the pod. Each named port in a pod must
+                              have a unique name. Name for the port that can be referred
+                              to by services.
+                            type: string
+                          protocol:
+                            default: TCP
+                            description: Protocol for port. Must be UDP, TCP, or SCTP.
+                              Defaults to "TCP".
+                            type: string
+                        required:
+                          - containerPort
+                        type: object
+                      type: array
+                    volumeMounts:
+                      description: patchStrategy:"merge" patchMergeKey:"mountPath"
+                      items:
+                        description: VolumeMount describes a mounting of a Volume within
+                          a container.
+                        properties:
+                          mountPath:
+                            description: Path within the container at which the volume
+                              should be mounted.  Must not contain ':'.
+                            type: string
+                          mountPropagation:
+                            description: mountPropagation determines how mounts are
+                              propagated from the host to container and the other way
+                              around. When not set, MountPropagationNone is used. This
+                              field is beta in 1.10.
+                            type: string
+                          name:
+                            description: This must match the Name of a Volume.
+                            type: string
+                          readOnly:
+                            description: Mounted read-only if true, read-write otherwise
+                              (false or unspecified). Defaults to false.
+                            type: boolean
+                          subPath:
+                            description: Path within the volume from which the container's
+                              volume should be mounted. Defaults to "" (volume's root).
+                            type: string
+                          subPathExpr:
+                            description: Expanded path within the volume from which
+                              the container's volume should be mounted. Behaves similarly
+                              to SubPath but environment variable references $(VAR_NAME)
+                              are expanded using the container's environment. Defaults
+                              to "" (volume's root). SubPathExpr and SubPath are mutually
+                              exclusive.
+                            type: string
+                        required:
+                          - mountPath
+                          - name
+                        type: object
+                      type: array
+                  type: object
+                initContainers:
+                  description: InitContainers is the list of init containers to be injected
+                    into the selected pod We will inject those containers by their name
+                    in ascending order We only inject init containers when a new pod
+                    is created, it does not apply to any existing pod
+                  items:
+                    description: SidecarContainer defines the container of Sidecar
+                    properties:
+                      podInjectPolicy:
+                        description: The rules that injected SidecarContainer into Pod.spec.containers,
+                          not takes effect in initContainers If BeforeAppContainer,
+                          the SidecarContainer will be injected in front of the pod.spec.containers
+                          otherwise it will be injected into the back. default BeforeAppContainerType
+                        type: string
+                      shareVolumePolicy:
+                        description: If ShareVolumePolicy is enabled, the sidecar container
+                          will share the other container's VolumeMounts in the pod(don't
+                          contains the injected sidecar container).
+                        properties:
+                          type:
+                            type: string
+                        type: object
+                      transferEnv:
+                        description: TransferEnv will transfer env info from other container
+                          SourceContainerName is pod.spec.container[x].name; EnvName
+                          is pod.spec.container[x].Env.name
+                        items:
+                          properties:
+                            envName:
+                              type: string
+                            envNames:
+                              items:
+                                type: string
+                              type: array
+                            sourceContainerName:
+                              type: string
+                            sourceContainerNameFrom:
+                              properties:
+                                fieldRef:
+                                  description: 'Selects a field of the pod: supports
+                                  metadata.name, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`,'
+                                  properties:
+                                    apiVersion:
+                                      description: Version of the schema the FieldPath
+                                        is written in terms of, defaults to "v1".
+                                      type: string
+                                    fieldPath:
+                                      description: Path of the field to select in the
+                                        specified API version.
+                                      type: string
+                                  required:
+                                    - fieldPath
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                          type: object
+                        type: array
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: array
+                labelModifier:
+                  description: LabelModifier defines rules to modify the labels of the
+                    pods
+                  properties:
+                    label:
+                      items:
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - key
+                        - value
+                        type: object
+                      type: array
+                  type: object                  
+                namespace:
+                  description: Namespace instrumentation will only match the pods in
+                    the namespace otherwise, match pods in all namespaces(in cluster)
+                  type: string
+                namespaceSelector:
+                  description: NamespaceSelector select which namespaces to inject instrumentations.
+                    Default to the empty LabelSelector, which matches everything.
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the key
+                          and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship to
+                              a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a strategic
+                              merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                          - key
+                          - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                  x-kubernetes-map-type: atomic
+                selector:
+                  description: selector is a label query over pods that should be injected
+                  properties:
+                    matchExpressions:
+                      description: matchExpressions is a list of label selector requirements.
+                        The requirements are ANDed.
+                      items:
+                        description: A label selector requirement is a selector that
+                          contains values, a key, and an operator that relates the key
+                          and values.
+                        properties:
+                          key:
+                            description: key is the label key that the selector applies
+                              to.
+                            type: string
+                          operator:
+                            description: operator represents a key's relationship to
+                              a set of values. Valid operators are In, NotIn, Exists
+                              and DoesNotExist.
+                            type: string
+                          values:
+                            description: values is an array of string values. If the
+                              operator is In or NotIn, the values array must be non-empty.
+                              If the operator is Exists or DoesNotExist, the values
+                              array must be empty. This array is replaced during a strategic
+                              merge patch.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                          - key
+                          - operator
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: matchLabels is a map of {key,value} pairs. A single
+                        {key,value} in the matchLabels map is equivalent to an element
+                        of matchExpressions, whose key field is "key", the operator
+                        is "In", and the values array contains only "value". The requirements
+                        are ANDed.
+                      type: object
+                  type: object
+                  x-kubernetes-map-type: atomic
+                volumes:
+                  description: List of volumes that can be mounted by sidecar containers
+                    and modifier
+                  x-kubernetes-preserve-unknown-fields: true
+              type: object
+            status:
+              description: InstrumentationStatus defines the observed state of Instrumentation
+              properties:
+                collisionCount:
+                  description: CollisionCount is the count of hash collisions for the
+                    Instrumentation. The Instrumentation controller uses this field
+                    as a collision avoidance mechanism when it needs to create the name
+                    for the newest ControllerRevision.
+                  format: int32
+                  type: integer
+                latestRevision:
+                  description: LatestRevision, if not empty, indicates the latest controllerRevision
+                    name of the Instrumentation.
+                  type: string
+                matchedPods:
+                  description: matchedPods is the number of Pods whose labels are matched
+                    with this Instrumentation's selector and are created after app instrumentation
+                    creates
+                  format: int32
+                  type: integer
+                observedGeneration:
+                  description: observedGeneration is the most recent generation observed
+                    for this Instrumentation. It corresponds to the Instrumentation's
+                    generation, which is updated on mutation by the API Server.
+                  format: int64
+                  type: integer
+                readyPods:
+                  description: readyPods is the number of matched Pods that have a ready
+                    condition
+                  format: int32
+                  type: integer
+                updatedPods:
+                  description: updatedPods is the number of matched Pods that are injected
+                    with the latest Instrumentation's containers
+                  format: int32
+                  type: integer
+                updatedReadyPods:
+                  description: updatedReadyPods is the number of matched pods that updated
+                    and ready
+                  format: int32
+                  type: integer
+              required:
+                - matchedPods
+                - readyPods
+                - updatedPods
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+{{ end }}

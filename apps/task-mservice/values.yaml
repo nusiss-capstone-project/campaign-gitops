@@ -1,0 +1,86 @@
+serviceName: task-mservice
+
+image:
+  repository: crpi-m8e4ka9sicipqhhl.ap-southeast-1.personal.cr.aliyuncs.com/campaign-center/task-mservice
+  tag: dev-202608150659
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: acr-secret
+
+replicaCount: 1
+
+containerPorts:
+  http: 8080
+  grpc: 5001
+
+probes:
+  liveness:
+    path: /task-ms/v1/ping
+  readiness:
+    path: /task-ms/v1/ping
+
+configFile:
+  enabled: true
+  name: config.yml
+  mountPath: /app/resources/config.yml
+  content:
+    grpc:
+      host: "0.0.0.0"
+      port: 5001
+      connect_timeout: 3
+      max_pool_size: 200
+    http:
+      host: "0.0.0.0"
+      port: 8080
+    log:
+      level: debug
+      file_path: ./logs/task-mservice.log
+    system:
+      allowed_origins:
+        - https://campaign-center-admin-web.vercel.app
+        - https://finverse-web.vercel.app
+        - http://localhost:3000
+    kafka:
+      enabled: true
+      brokers:
+        # In-cluster Kafka: <service>.<namespace>.svc.cluster.local:<port>
+        - kafka.messaging.svc.cluster.local:9092
+      group_id: task-mservice
+      client_id: task-mservice
+      topics:
+        - user.events.kyc_complete
+        - payment.payment_method.added
+        - asset.order.payment_result
+        - deposit.transaction.payment_result
+
+externalSecret:
+  enabled: true
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: task-mservice-secret
+  refreshInterval: 1h
+  remoteRef:
+    key: campaign-center/dev/task-mservice
+
+envFromSecret:
+  enabled: true
+  secretName: task-mservice-secret
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5001
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+imagePullSecrets:
+  - name: acr-secret

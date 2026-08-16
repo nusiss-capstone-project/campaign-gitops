@@ -1,0 +1,131 @@
+# -- Logical service name used for Kubernetes resource naming and labels.
+serviceName: ""
+
+replicaCount: 1
+
+image:
+  repository: ""
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  # -- Create a dedicated ServiceAccount for the workload.
+  create: true
+  # -- Override the generated ServiceAccount name.
+  name: ""
+  annotations: {}
+
+containerPorts:
+  http: 8080
+  grpc: 5001
+
+probes:
+  liveness:
+    enabled: true
+    path: /healthz
+    # -- Probe port selector: "http" or "grpc".
+    port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /readyz
+    # -- Probe port selector: "http" or "grpc".
+    port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+# When enabled, chart renders a Rollout instead of a Deployment (Argo Rollouts).
+# Other services keep rollout.enabled=false.
+rollout:
+  enabled: false
+  revisionHistoryLimit: 3
+  canary:
+    # Extra pod allowed during canary (needed when replicaCount is 1).
+    maxSurge: "1"
+    maxUnavailable: 0
+    # Traffic weight ≈ canary pod share behind the single Service selector.
+    steps:
+      - setWeight: 50
+      - pause:
+          duration: 3m
+      - setWeight: 100
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+configFile:
+  enabled: false
+  name: config.yml
+  mountPath: /app/config.yml
+  content: {}
+
+externalSecret:
+  enabled: false
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  targetSecretName: ""
+  refreshInterval: 1h
+  # Sync all keys from this Vault path into the target Secret.
+  remoteRef:
+    key: ""
+  # Optional explicit key mapping. When non-empty, overrides remoteRef extract mode.
+  data: []
+
+envFromSecret:
+  enabled: false
+  secretName: ""
+
+# Extra container env vars (list). Merged after otel defaults when both set.
+extraEnv: []
+
+# OTLP → Grafana Cloud Alloy (in-cluster receiver; Alloy ships to Grafana Cloud).
+# Go services require ENDPOINT + HEADERS + PROTOCOL=http/protobuf; empty HEADERS disables export.
+# Use :4318 (OTLP/HTTP). :4317 is gRPC and is not supported by these services.
+otel:
+  enabled: true
+  endpoint: http://grafana-cloud-alloy.monitoring.svc.cluster.local:4318
+  protocol: http/protobuf
+  # Non-secret placeholder for in-cluster Alloy (app requires non-empty HEADERS).
+  headers: x-campaign-otel=dev
+  # When true, also set OTEL_SERVICE_NAME from serviceName.
+  setServiceName: true
+  # Log field `env` (defaults to "local" if unset).
+  appEnv: dev
+  # Comma-separated resource attributes (optional).
+  resourceAttributes: deployment.environment=dev,service.namespace=campaign-dev
+  # Trace sampler ratio argument for parentbased_traceidratio (optional; empty = omit).
+  tracesSampler: parentbased_traceidratio
+  tracesSamplerArg: "1.0"
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+    grpc: 5001
+
+podAnnotations:
+  linkerd.io/inject: enabled
+podLabels: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

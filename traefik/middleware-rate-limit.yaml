@@ -1,0 +1,25 @@
+# Rate limit for campaign-center-api only.
+#
+# Do not set sourceCriterion.ipStrategy.depth. RateLimit runs before Traefik
+# appends the previous hop to X-Forwarded-For; depth > available XFF IPs
+# yields an empty client IP and can fail middleware construction. Traefik then
+# disables every router that references the middleware — previously this was
+# attached to all routes on the shared IngressRoute, so the whole host went
+# dark (and a kubernetescrd conversion error can drop all CRD routes).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: campaign-center-api-rate-limit
+  namespace: campaign-dev
+  labels:
+    app.kubernetes.io/name: campaign-center-api
+    app.kubernetes.io/part-of: campaign-center
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  rateLimit:
+    # Sustained average requests per period (default period = 1s).
+    average: 20
+    # Short burst above average before 429.
+    burst: 50
